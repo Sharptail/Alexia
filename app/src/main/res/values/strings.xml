@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Alexia</string>
+    <string name="access_token">"pk.eyJ1Ijoic2hhcnB0YWlsIiwiYSI6ImNpdzVzM3ZydDAwNngyeXBkdGJ6cDZmc20ifQ.l6PaV2io7Ecld_MNT-rvwg"</string>
+    <string name="mapbox_url">mapbox://styles/sharptail/ciwhbnksu002l2pnvk4qnkn7n</string>
+</resources>
