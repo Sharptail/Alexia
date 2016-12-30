@@ -1,5 +1,6 @@
 package sg.edu.nyp.alexia;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.graphics.Bitmap;
@@ -50,6 +51,16 @@ public class RoutingActivity extends Activity {
     private File mapsFolder;
     private volatile boolean prepareInProgress = false;
     private volatile boolean shortestPathRunning = false;
+
+    @Override
+    protected void onStart(){
+        super.onStart();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == -1) {
+            requestPermissions(new String[]{
+                    Manifest.permission.CAMERA
+            },1234);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

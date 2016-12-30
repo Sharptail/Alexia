@@ -2,21 +2,20 @@ package sg.edu.nyp.alexia;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.Window;
 
 import com.mapbox.mapboxsdk.MapboxAccountManager;
 
 import java.io.File;
-
-import static android.content.ContentValues.TAG;
 
 public class MainActivity extends Activity {
     private String mapDownloadURL = "https://firebasestorage.googleapis.com/v0/b/mocktest-efa0d.appspot.com/o/singapore7-gh.zip?alt=media&token=752a6e87-1d69-4f23-9701-43e78f872a4b";
@@ -26,9 +25,15 @@ public class MainActivity extends Activity {
     protected void onStart(){
         super.onStart();
         if (isNetworkAvailable()) {
-            Log.d(TAG, "Network is Available");
+            if(new File(targetFilePath +  getString(R.string.map_file_name)).exists() == false){
+                if(new File(targetFilePath + getString(R.string.map_file_name) + ".zip").exists() == false){
+                    downloadFiles(getString(R.string.app_name)+" is downloading the necessary files...",mapDownloadURL);
+                }else{
+                    unzipFiles(getString(R.string.app_name)+" is unzipping the files...",targetFilePath + getString(R.string.map_file_name) + ".zip", targetFilePath);
+                }
+            }
         } else {
-            Log.d(TAG, "No Network");
+            showDialog("NO INTERNET CONNECTION", "Please connect to an internet to continue");
         }
     }
 
@@ -48,14 +53,7 @@ public class MainActivity extends Activity {
                 Manifest.permission.WAKE_LOCK
         }, 1234);
 
-        if(new File(targetFilePath +  getString(R.string.map_file_name)).exists() == false){
-            if(new File(targetFilePath + getString(R.string.map_file_name) + ".zip").exists() == false){
-                downloadFiles(getString(R.string.app_name)+" is downloading the necessary files...",mapDownloadURL);
-            }else{
-                unzipFiles(getString(R.string.app_name)+" is unzipping the files...",targetFilePath + getString(R.string.map_file_name) + ".zip", targetFilePath);
-            }
 
-        }
     }
 
     //Network checker Method
@@ -64,6 +62,19 @@ public class MainActivity extends Activity {
                 = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
+    private void showDialog(String title, String message){
+        new AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                    // continue with delete
+                }
+            })
+            .show();
     }
 
     private ProgressDialog createProgressDialog(String message){
