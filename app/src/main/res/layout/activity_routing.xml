@@ -10,5 +10,17 @@
         android:id="@+id/mapview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        mapbox:style_url="@string/mapbox_url"/>
+        mapbox:style_url="@string/mapbox_url">
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/qr_scanner_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|right"
+            android:src="@drawable/camera"
+            android:layout_margin="10dp"
+            android:clickable="true"
+            android:onClick="openQRScanner"
+            />
+    </com.mapbox.mapboxsdk.maps.MapView>
 </RelativeLayout>

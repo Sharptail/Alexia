@@ -2,7 +2,10 @@ package sg.edu.nyp.alexia;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Path;
@@ -14,7 +17,12 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.View;
 import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.graphhopper.GHRequest;
@@ -51,6 +59,7 @@ public class RoutingActivity extends Activity {
     private File mapsFolder;
     private volatile boolean prepareInProgress = false;
     private volatile boolean shortestPathRunning = false;
+    private Integer selectedLocationIndex = 0;
 
     @Override
     protected void onStart(){
@@ -278,8 +287,96 @@ public class RoutingActivity extends Activity {
                 }
 
                 finishPrepare();
+//                openQRScanner();
+
             }
         }.execute();
+    }
+    public void openQRScanner(View view){
+        Intent intent = new Intent(this, QRCodeScannerActivity.class);
+        startActivityForResult(intent,1);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 1) {
+            if(resultCode == Activity.RESULT_OK){
+                String result=data.getStringExtra("result");
+                String [] coords = result.split(",");
+                Double lat = Double.parseDouble(coords[0]);
+                Double lng = Double.parseDouble(coords[1]);
+                final LatLng points = new LatLng(lat,lng);
+                start = points;
+                end = null;
+
+                mapView.getMapAsync(new OnMapReadyCallback() {
+                    @Override
+                    public void onMapReady(final MapboxMap mapboxMap) {
+                        mapboxMap.clear();
+                        // Add the marker to the map
+                        mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "You Are Here!", ""));
+
+                        String [] destination_location = {"Big Room", "Last Room"};
+                        final String [] destination_coords = {"1.379166419501388,103.84994486842379","1.3790777965512575,103.84973653167629"};
+
+                        final ArrayAdapter<String> adp = new ArrayAdapter<String>(RoutingActivity.this,
+                                android.R.layout.simple_spinner_item, destination_location);
+
+                        final Spinner sp = new Spinner(RoutingActivity.this);
+                        sp.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                        sp.setAdapter(adp);
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(RoutingActivity.this);
+                        builder.setView(sp);
+                        builder.setTitle("Where do you want to go?");
+                        builder.setMessage("Please choose your destination");
+                        builder.setPositiveButton("Go", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                if(selectedLocationIndex >= 0){
+                                    String [] coords = destination_coords[selectedLocationIndex].split(",");
+                                    Double lat = Double.parseDouble(coords[0]);
+                                    Double lng = Double.parseDouble(coords[1]);
+                                    LatLng point = new LatLng(lat,lng);
+                                    end = point;
+
+                                    // Add the marker to the map
+                                    mapboxMap.addMarker(createMarkerItem(end, R.drawable.end, "Destination", ""));
+
+                                    // Calculate Shortest Path
+                                    calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
+                                            end.getLongitude(),mapboxMap);
+
+                                }
+                            }
+                        });
+                        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                mapboxMap.clear();
+                            }
+                        });
+
+                        builder.create().show();
+
+                        sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                                selectedLocationIndex = i;
+                            }
+
+                            @Override
+                            public void onNothingSelected(AdapterView<?> adapterView) {
+                                selectedLocationIndex = -1;
+                            }
+                        });
+                    }
+                });
+            }
+            if (resultCode == Activity.RESULT_CANCELED) {
+                //Write your code if there's no result
+            }
+        }
     }
 
     private void finishPrepare() {
