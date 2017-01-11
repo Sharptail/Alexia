@@ -15,6 +15,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
@@ -25,6 +26,11 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.graphhopper.GHRequest;
 import com.graphhopper.GHResponse;
 import com.graphhopper.GraphHopper;
@@ -36,7 +42,9 @@ import com.graphhopper.util.ProgressListener;
 import com.graphhopper.util.StopWatch;
 import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.IconFactory;
+import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerViewOptions;
+import com.mapbox.mapboxsdk.annotations.Polyline;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
@@ -49,10 +57,15 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import sg.edu.nyp.alexia.Class.Room;
+
 public class RoutingActivity extends Activity {
+    private AppDrawer appDrawer;
+    private FloatingActionButton nextButton;
     private MapView mapView;
     private GraphHopper hopper;
     private LatLng start;
+    private Marker startMarker;
     private LatLng end;
     private String currentArea = "singapore7";
     private String downloadURL;
@@ -60,6 +73,10 @@ public class RoutingActivity extends Activity {
     private volatile boolean prepareInProgress = false;
     private volatile boolean shortestPathRunning = false;
     private Integer selectedLocationIndex = 0;
+    private ArrayList<Room> roomList = new ArrayList<>();
+    private List<LatLng> calculatedPoints = new ArrayList<>();
+    private List<Polyline> calculatedPolylines = new ArrayList<>();
+    private int userCurrentPos = 0;
 
     @Override
     protected void onStart(){
@@ -76,6 +93,30 @@ public class RoutingActivity extends Activity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_routing);
+
+        appDrawer = new AppDrawer(this);
+        nextButton = (FloatingActionButton) findViewById(R.id.nextButton);
+
+        nextButton.setTag(1);
+
+        // Write a message to the database
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("Routing");
+
+        myRef.child("fyproom").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot roomSnapshot: dataSnapshot.getChildren()) {
+                    Room room = roomSnapshot.getValue(Room.class);
+                    roomList.add(room);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
 
         // Jian Wei - set graphhopper maps' folder
         boolean greaterOrEqKitkat = Build.VERSION.SDK_INT >= 19;
@@ -100,37 +141,36 @@ public class RoutingActivity extends Activity {
             @Override
             public void onMapReady(final MapboxMap mapboxMap) {
                 //ZOOM TO LOCATION
-                LatLng zoomLocation = new LatLng(1.3792949602146791,103.84983998176449);
+                final LatLng zoomLocation = new LatLng(1.3792949602146791,103.84983998176449);
                 CameraPosition position = new CameraPosition.Builder()
                         .target(zoomLocation)
                         .zoom(19) // Sets the zoom
                         .build(); // Creates a CameraPosition from the builder
-
                 mapboxMap.animateCamera(CameraUpdateFactory
                         .newCameraPosition(position), 2000);
                 mapboxMap.setOnMapLongClickListener(new MapboxMap.OnMapLongClickListener() {
                     @Override
                     public void onMapLongClick(LatLng point) {
-                        if (!isReady()) {logUser("Load Map or Graph failed!");return;}
-                        if (shortestPathRunning) {logUser("Calculation still in progress");return;}
+                    if (!isReady()) {logUser("Load Map or Graph failed!");return;}
+                    if (shortestPathRunning) {logUser("Calculation still in progress");return;}
 
-                        if (start != null && end == null) {
-                            end = point;
-                            shortestPathRunning = true;
+                    if (start != null && end == null) {
+                        end = point;
+                        shortestPathRunning = true;
 
-                            // Add the marker to the map
-                            mapboxMap.addMarker(createMarkerItem(end, R.drawable.end, "Destination", ""));
+                        // Add the marker to the map
+                        mapboxMap.addMarker(createMarkerItem(end, R.drawable.end, "Destination", ""));
 
-                            // Calculate Shortest Path
-                            calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(), end.getLongitude(),mapboxMap);
-                        }else{
-                            start = point;
-                            end = null;
-                            mapboxMap.clear();
-                            // Add the marker to the map
-                            mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "Start", ""));
-
-                        }
+                        // Calculate Shortest Path
+                        calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(), end.getLongitude(),mapboxMap);
+                    }else{
+                        userCurrentPos = 0;
+                        start = point;
+                        end = null;
+                        mapboxMap.clear();
+                        // Add the marker to the map
+                        mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "Start", ""));
+                    }
                     }
                 });
             }
@@ -292,6 +332,7 @@ public class RoutingActivity extends Activity {
             }
         }.execute();
     }
+
     public void openQRScanner(View view){
         Intent intent = new Intent(this, QRCodeScannerActivity.class);
         startActivityForResult(intent,1);
@@ -312,64 +353,71 @@ public class RoutingActivity extends Activity {
                 mapView.getMapAsync(new OnMapReadyCallback() {
                     @Override
                     public void onMapReady(final MapboxMap mapboxMap) {
-                        mapboxMap.clear();
-                        // Add the marker to the map
-                        mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "You Are Here!", ""));
+                    mapboxMap.clear();
+                    userCurrentPos = 0;
+                    // Add the marker to the map
+                    startMarker = mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "You Are Here!", ""));
 
-                        String [] destination_location = {"Big Room", "Last Room"};
-                        final String [] destination_coords = {"1.379166419501388,103.84994486842379","1.3790777965512575,103.84973653167629"};
+                    ArrayList<String> destination_location = new ArrayList<String>();
+                    final ArrayList<String> destination_coords = new ArrayList<String>();
+                    for(int i = 0; i<roomList.size(); i++){
+                        destination_location.add(roomList.get(i).getName());
+                        destination_coords.add(Double.toString(roomList.get(i).getLat())+","+Double.toString(roomList.get(i).getLng()));
+                    }
+//                    String [] destination_location = {"Big Room", "Last Room"};
+//                    final String [] destination_coords = {"1.379166419501388,103.84994486842379","1.3790777965512575,103.84973653167629"};
 
-                        final ArrayAdapter<String> adp = new ArrayAdapter<String>(RoutingActivity.this,
-                                android.R.layout.simple_spinner_item, destination_location);
+                    final ArrayAdapter<String> adp = new ArrayAdapter<String>(RoutingActivity.this,
+                            android.R.layout.simple_spinner_item, destination_location);
 
-                        final Spinner sp = new Spinner(RoutingActivity.this);
-                        sp.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-                        sp.setAdapter(adp);
+                    final Spinner sp = new Spinner(RoutingActivity.this);
+                    sp.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                    sp.setAdapter(adp);
 
-                        AlertDialog.Builder builder = new AlertDialog.Builder(RoutingActivity.this);
-                        builder.setView(sp);
-                        builder.setTitle("Where do you want to go?");
-                        builder.setMessage("Please choose your destination");
-                        builder.setPositiveButton("Go", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                if(selectedLocationIndex >= 0){
-                                    String [] coords = destination_coords[selectedLocationIndex].split(",");
-                                    Double lat = Double.parseDouble(coords[0]);
-                                    Double lng = Double.parseDouble(coords[1]);
-                                    LatLng point = new LatLng(lat,lng);
-                                    end = point;
+                    AlertDialog.Builder builder = new AlertDialog.Builder(RoutingActivity.this);
+                    builder.setView(sp);
+                    builder.setTitle("Where do you want to go?");
+                    builder.setMessage("Please choose your destination");
+                    builder.setPositiveButton("Go", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            if(selectedLocationIndex >= 0){
+                                String [] coords = destination_coords.get(selectedLocationIndex).split(",");
+                                Double lat = Double.parseDouble(coords[0]);
+                                Double lng = Double.parseDouble(coords[1]);
+                                LatLng point = new LatLng(lat,lng);
+                                end = point;
 
-                                    // Add the marker to the map
-                                    mapboxMap.addMarker(createMarkerItem(end, R.drawable.end, "Destination", ""));
+                                // Add the marker to the map
+                                mapboxMap.addMarker(createMarkerItem(end, R.drawable.end, "Destination", ""));
 
-                                    // Calculate Shortest Path
-                                    calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
-                                            end.getLongitude(),mapboxMap);
+                                // Calculate Shortest Path
+                                calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
+                                        end.getLongitude(),mapboxMap);
 
-                                }
                             }
-                        });
-                        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                mapboxMap.clear();
-                            }
-                        });
+                        }
+                    });
+                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            mapboxMap.clear();
+                        }
+                    });
 
-                        builder.create().show();
+                    builder.create().show();
 
-                        sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                            @Override
-                            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                                selectedLocationIndex = i;
-                            }
+                    sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                            selectedLocationIndex = i;
+                        }
 
-                            @Override
-                            public void onNothingSelected(AdapterView<?> adapterView) {
-                                selectedLocationIndex = -1;
-                            }
-                        });
+                        @Override
+                        public void onNothingSelected(AdapterView<?> adapterView) {
+                            selectedLocationIndex = -1;
+                        }
+                    });
                     }
                 });
             }
@@ -377,6 +425,57 @@ public class RoutingActivity extends Activity {
                 //Write your code if there's no result
             }
         }
+    }
+
+    public void nextPos(View view){
+//        mapView.getMapAsync(new OnMapReadyCallback() {
+//            @Override
+//            public void onMapReady(MapboxMap mapboxMap) {
+//                if(userCurrentPos+2<calculatedPoints.size()){
+//                    LatLng newPosition = new LatLng(calculatedPoints.get(userCurrentPos+1).getLatitude(),calculatedPoints.get(userCurrentPos+1).getLongitude());
+//                    LatLng nextPosition = new LatLng(calculatedPoints.get(userCurrentPos+2).getLatitude(),calculatedPoints.get(userCurrentPos+2).getLongitude());
+//                    startMarker.setPosition(newPosition);
+//                    mapboxMap.removePolyline(calculatedPolylines.get(userCurrentPos));
+//
+//                    Double bearing = getBearing(newPosition,nextPosition);
+////                    logUser(Double.toString(bearing));
+//                    //ZOOM TO LOCATION
+//                    CameraPosition position = new CameraPosition.Builder()
+//                            .target(newPosition)
+//                            .zoom(22) // Sets the zoom
+//                            .tilt(60)
+//                            .bearing(bearing)
+//                            .build(); // Creates a CameraPosition from the builder
+//                    mapboxMap.animateCamera(CameraUpdateFactory
+//                            .newCameraPosition(position), 2000);
+//
+//                    userCurrentPos++;
+//                }else{
+//                    logUser("you reached");
+//                }
+//            }
+//        });
+//        logUser(Boolean.toString(appDrawer.getIsSwitched()));
+//        if(appDrawer.getIsSwitched() == false){
+            int buttonTag = (int)view.getTag();
+        if(buttonTag == 1){
+            appDrawer.switchDrawer(buttonTag);
+        }else{
+//            appDrawer.closeDrawer();
+            appDrawer.switchDrawer(2);
+        }
+    }
+
+    private double getBearing(LatLng first, LatLng second){
+        double longitude1 = first.getLongitude();
+        double longitude2 = second.getLongitude();
+        double latitude1 = Math.toRadians(first.getLatitude());
+        double latitude2 = Math.toRadians(second.getLatitude());
+        double longDiff= Math.toRadians(longitude2-longitude1);
+        double y= Math.sin(longDiff)*Math.cos(latitude2);
+        double x=Math.cos(latitude1)*Math.sin(latitude2)-Math.sin(latitude1)*Math.cos(latitude2)*Math.cos(longDiff);
+
+        return (Math.toDegrees(Math.atan2(y, x))+360)%360;
     }
 
     private void finishPrepare() {
@@ -411,21 +510,45 @@ public class RoutingActivity extends Activity {
                             + "km long, time:" + resp.getTime() / 60000f + "min, debug:" + time);
 
                     List<LatLng> points = createPathLayer(resp);
+                    List<Polyline> polylines = new ArrayList<Polyline>();
 
                     if (points.size() > 0) {
-
-                        // Draw polyline on map
-                        mapboxMap.addPolyline(new PolylineOptions()
-                                .addAll(points)
-                                .color(Color.parseColor("#3bb2d0"))
-                                .width(2));
+                        for(int i = 0; i<points.size()-1; i++){
+                            // Draw polyline on map
+                            Polyline polyline = mapboxMap.addPolyline(new PolylineOptions()
+                                    .add(points.get(i))
+                                    .add(points.get(i+1))
+                                    .color(Color.parseColor("#F27777"))
+                                    .width(3));
+                            polylines.add(polyline);
+                        }
                     }
+                    setCalculatedPointsAndPolylines(points, polylines);
+
+                    Double bearing = getBearing(points.get(0),points.get(1));
+
+                    //ZOOM TO LOCATION
+                    LatLng zoomLocation = new LatLng(start.getLatitude(), start.getLongitude());
+                    CameraPosition position = new CameraPosition.Builder()
+                            .target(zoomLocation)
+                            .zoom(22) // Sets the zoom
+                            .tilt(60)
+                            .bearing(bearing)
+                            .build(); // Creates a CameraPosition from the builder
+                    mapboxMap.animateCamera(CameraUpdateFactory
+                            .newCameraPosition(position), 2000);
                 } else {
                     logUser("Error:" + resp.getErrors());
                 }
                 shortestPathRunning = false;
             }
         }.execute();
+    }
+
+    // Jian Wei - get the calculated points from asyntask
+    private void setCalculatedPointsAndPolylines(List<LatLng> points, List<Polyline> polylines){
+        calculatedPoints = points;
+        calculatedPolylines = polylines;
     }
 
     // Jian Wei - Create the shortest path's polyline on the map
@@ -436,7 +559,6 @@ public class RoutingActivity extends Activity {
             geoPoints.add(new LatLng(pointList.getLatitude(i), pointList.getLongitude(i)));
         }
         return geoPoints;
-
     }
 
     // Jian Wei - Create an Icon object for the marker to use

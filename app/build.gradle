@@ -30,18 +30,22 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:25.0.1'
-    compile 'com.android.support:design:25.0.1'
-    testCompile 'junit:junit:4.12'
 
-    compile ('com.mapbox.mapboxsdk:mapbox-android-sdk:4.1.1@aar'){
-        transitive=true
+    compile('com.mapbox.mapboxsdk:mapbox-android-sdk:4.2.1@aar') {
+        transitive = true
     }
-    compile 'me.dm7.barcodescanner:zxing:1.8.4'
 
     compile(group: 'com.graphhopper', name: 'graphhopper-core', version: '0.9-SNAPSHOT') {
         exclude group: 'com.google.protobuf', module: 'protobuf-java'
         exclude group: 'org.openstreetmap.osmosis', module: 'osmosis-osm-binary'
         exclude group: 'org.apache.xmlgraphics', module: 'xmlgraphics-commons'
     }
+    compile 'com.android.support:appcompat-v7:25.1.0'
+    compile 'com.android.support:design:25.1.0'
+    compile 'me.dm7.barcodescanner:zxing:1.8.4'
+    compile 'com.google.firebase:firebase-database:10.0.1'
+    testCompile 'junit:junit:4.12'
 }
+
+
+apply plugin: 'com.google.gms.google-services'

@@ -1,0 +1,86 @@
+{
+  "project_info": {
+    "project_number": "501454969164",
+    "firebase_url": "https://alexihealth-2f226.firebaseio.com",
+    "project_id": "alexihealth-2f226",
+    "storage_bucket": "alexihealth-2f226.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:501454969164:android:cc570f2e036daffd",
+        "android_client_info": {
+          "package_name": "com.alex.androidgeofence"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "501454969164-fccvm63psg8vsno57epk4ontcpk7eh9t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBxszPM63uvQJsxRkG_y_0zzjCFVgzQltg"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:501454969164:android:1fc49c546d7d1337",
+        "android_client_info": {
+          "package_name": "sg.edu.nyp.alexia"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "501454969164-tippuvf6ifaathqla9as7dpisgd1g00q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "sg.edu.nyp.alexia",
+            "certificate_hash": "886711ECF3F6C2AA28B5E4D44651AE09749EFB64"
+          }
+        },
+        {
+          "client_id": "501454969164-fccvm63psg8vsno57epk4ontcpk7eh9t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBxszPM63uvQJsxRkG_y_0zzjCFVgzQltg"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "501454969164-fccvm63psg8vsno57epk4ontcpk7eh9t.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

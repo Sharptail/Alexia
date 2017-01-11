@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 
 import com.google.zxing.Result;
 
@@ -29,8 +28,8 @@ public class QRCodeScannerActivity extends Activity implements ZXingScannerView.
     public void handleResult(Result rawResult) {
         // Do something with the result here
 
-        Log.e("handler", rawResult.getText()); // Prints scan results
-        Log.e("handler", rawResult.getBarcodeFormat().toString()); // Prints the scan format (qrcode)
+//        Log.e("handler", rawResult.getText()); // Prints scan results
+//        Log.e("handler", rawResult.getBarcodeFormat().toString()); // Prints the scan format (qrcode)
 
         // show the scanner result into dialog box.
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
