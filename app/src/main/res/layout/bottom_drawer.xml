@@ -5,11 +5,72 @@
     android:layout_height="@dimen/drawer_height"
     android:id="@+id/bottom_drawer"
     android:background="?attr/colorPrimary">
-    <TextView
+
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/drawer_txt"
-        android:textSize="28sp"
-        android:gravity="center_horizontal|center_vertical" />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="1">
+        <TextView
+            android:id="@+id/drawer_title"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="0.6"
+            android:gravity="left|center"
+            android:textSize="18sp"
+            android:text="What do you want to do?"/>
+
+
+        <Button
+            android:layout_width="49dp"
+            android:layout_height="match_parent"
+            android:text="Show ATM"
+            android:onClick="showATM"
+            android:textSize="10sp"
+            android:layout_weight="0.2" />
+
+        <Button
+            android:layout_width="49dp"
+            android:layout_height="match_parent"
+            android:text="X"
+            android:onClick="closeDrawer"
+            android:layout_weight="0.2" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_weight="0.95">
+
+        <Button
+            android:id="@+id/nearby_button"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="0.5"
+            android:text="Nearby ATM"
+            android:onClick="goToNearbyATM"/>
+
+
+        <Button
+            android:id="@+id/routing_button"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="0.5"
+            android:text="Go To"
+            android:onClick="openGoTo"/>
+
+
+        <Button
+            android:id="@+id/next_button"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="Next"
+            android:onClick="nextPos"
+            android:visibility="gone"/>
+
+    </LinearLayout>
 
 </LinearLayout>
