@@ -21,19 +21,7 @@
             android:src="@drawable/camera"
             android:layout_margin="10dp"
             android:clickable="true"
-            android:onClick="openQRScanner"
-            />
-
-        <android.support.design.widget.FloatingActionButton
-            android:id="@+id/nextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|end"
-            android:src="@drawable/camera"
-            android:layout_margin="10dp"
-            android:clickable="true"
-            android:onClick="nextPos"
-            />
+            android:onClick="openQRScanner"/>
 
 
         <TextView
@@ -41,7 +29,7 @@
             android:layout_height="match_parent"
             android:id="@+id/drawer_txt"
             android:textSize="28sp"
-            android:gravity="center_horizontal|center_vertical" />
+            android:gravity="center_horizontal|center_vertical"/>
     </com.mapbox.mapboxsdk.maps.MapView>
 
     <include

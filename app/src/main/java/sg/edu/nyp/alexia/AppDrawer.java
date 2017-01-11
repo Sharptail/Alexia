@@ -8,6 +8,7 @@ import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -28,6 +29,10 @@ class AppDrawer {
     private boolean isSwitched = false;
     private TextView drawerTxt;
     private RelativeLayout mainLayout;
+    private TextView drawerTitle;
+    private Button nearbyButton;
+    private Button goToButton;
+    private Button nextButton;
 
     private enum S {OPEN_NOW, OPEN, CLOSE_NOW, CLOSE, CANCELED_NOW, CANCEL, TIME_OFF}     // States of animation
     private S animState = S.CLOSE;                                                        // Set state
@@ -44,6 +49,10 @@ class AppDrawer {
         // Bottom Drawer
         bottomDrawer =  activity.findViewById(R.id.bottom_drawer);
         drawerTxt = (TextView) bottomDrawer.findViewById(R.id.drawer_txt);
+        drawerTitle = (TextView) bottomDrawer.findViewById(R.id.drawer_title);
+        nearbyButton = (Button) bottomDrawer.findViewById(R.id.nearby_button);
+        goToButton = (Button) bottomDrawer.findViewById(R.id.routing_button);
+        nextButton = (Button) bottomDrawer.findViewById(R.id.next_button);
 
         // Handler for timing for automatically closing the drawer
         handlCountDown = new Handler();
@@ -86,7 +95,7 @@ class AppDrawer {
                 animState = S.OPEN;
 
                 // Turning on the automatic timer closing drawer
-                handlCountDown.postDelayed(closeDrawerTimer, waitMS);
+//                handlCountDown.postDelayed(closeDrawerTimer, waitMS);
             }
             if ((direct == DRAWER_DOWN) && (animState != S.CANCELED_NOW) && (animState != S.CANCEL)) animState = S.CLOSE;
             Log.d("Test", "End Animation: " + animState);
@@ -173,18 +182,26 @@ class AppDrawer {
     private void refreshData(int currentDrawer){
         switch (currentDrawer) {
             case 1: // Drawer 1
+                drawerTitle.setText("What do you want to do?");
                 color = R.color.color_1;
+                nextButton.setVisibility(View.GONE);
+                nearbyButton.setVisibility(View.VISIBLE);
+                goToButton.setVisibility(View.VISIBLE);
                 break;
             case 2: // Drawer 2
                 color = R.color.color_2;
+                drawerTitle.setText("Click Next");
+                nextButton.setVisibility(View.VISIBLE);
+                nearbyButton.setVisibility(View.GONE);
+                goToButton.setVisibility(View.GONE);
                 break;
             case 3: // Drawer 3
                 color = R.color.color_3;
                 break;
         }
         bottomDrawer.setBackgroundColor(ContextCompat.getColor(activity, color));
-        String drawerDescr = "Drawer " + Integer.toString(currentDrawer);
-        drawerTxt.setText(drawerDescr);
+//        String drawerDescr = "Drawer " + Integer.toString(currentDrawer);
+//        drawerTxt.setText(drawerDescr);
     }
 
     // --------------------------------------------------------------------------------------------- Closing the drawer
