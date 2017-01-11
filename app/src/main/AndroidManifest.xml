@@ -38,8 +38,11 @@
             </intent-filter>
         </activity>
         <activity android:name=".RoutingActivity" />
-        <activity android:name=".CheckInActivity" />
-        <activity android:name=".QRCodeScannerActivity"></activity>
+        <activity android:name=".QRCodeScannerActivity"/>
+        <activity android:name=".NRICVerification" android:label="@string/nric_verify"/>
+        <activity android:name=".OTPVerification" android:label="@string/otp_verify"/>
+        <activity android:name=".AppointmentChecker" android:label="@string/appointment"/>
+        <service android:name=".GeofenceService" android:exported="true" android:enabled="true"/>
     </application>
 
 </manifest>

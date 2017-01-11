@@ -7,6 +7,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -20,22 +21,24 @@ import java.io.File;
 public class MainActivity extends Activity {
     private String mapDownloadURL = "https://firebasestorage.googleapis.com/v0/b/mocktest-efa0d.appspot.com/o/singapore7-gh.zip?alt=media&token=752a6e87-1d69-4f23-9701-43e78f872a4b";
     private String targetFilePath = "/sdcard/Download/graphhopper/maps/";
+    public static final String PREFS_NRIC = "MyNricFile";
 
     @Override
-    protected void onStart(){
+    protected void onStart() {
         //test
         super.onStart();
         if (isNetworkAvailable()) {
-            if(new File(targetFilePath +  getString(R.string.map_file_name)).exists() == false){
-                if(new File(targetFilePath + getString(R.string.map_file_name) + ".zip").exists() == false){
-                    downloadFiles(getString(R.string.app_name)+" is downloading the necessary files...",mapDownloadURL);
-                }else{
-                    unzipFiles(getString(R.string.app_name)+" is unzipping the files...",targetFilePath + getString(R.string.map_file_name) + ".zip", targetFilePath);
+            if (new File(targetFilePath + getString(R.string.map_file_name)).exists() == false) {
+                if (new File(targetFilePath + getString(R.string.map_file_name) + ".zip").exists() == false) {
+                    downloadFiles(getString(R.string.app_name) + " is downloading the necessary files...", mapDownloadURL);
+                } else {
+                    unzipFiles(getString(R.string.app_name) + " is unzipping the files...", targetFilePath + getString(R.string.map_file_name) + ".zip", targetFilePath);
                 }
             }
         } else {
             showDialog("NO INTERNET CONNECTION", "Please connect to an internet to continue");
         }
+
     }
 
     @Override
@@ -53,8 +56,6 @@ public class MainActivity extends Activity {
                 Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WAKE_LOCK
         }, 1234);
-
-
     }
 
     //Network checker Method
@@ -65,20 +66,20 @@ public class MainActivity extends Activity {
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
-    private void showDialog(String title, String message){
+    private void showDialog(String title, String message) {
         new AlertDialog.Builder(this)
-            .setTitle(title)
-            .setMessage(message)
-            .setIcon(android.R.drawable.ic_dialog_alert)
-            .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int which) {
-                    // continue with delete
-                }
-            })
-            .show();
+                .setTitle(title)
+                .setMessage(message)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // continue with delete
+                    }
+                })
+                .show();
     }
 
-    private ProgressDialog createProgressDialog(String message){
+    private ProgressDialog createProgressDialog(String message) {
         ProgressDialog progressDialog;
         progressDialog = new ProgressDialog(MainActivity.this);
         progressDialog.setMessage(message);
@@ -89,16 +90,16 @@ public class MainActivity extends Activity {
         return progressDialog;
     }
 
-    private void downloadFiles(String message, String url){
+    private void downloadFiles(String message, String url) {
         // Jian Wei - declare the dialog as a member field of the activity
         ProgressDialog downloadProgressDialog = createProgressDialog(message);
 
         // Jian Wei - execute this when the downloader must be fired
-        final DownloadTask downloadTask = new DownloadTask(MainActivity.this,downloadProgressDialog, targetFilePath);
+        final DownloadTask downloadTask = new DownloadTask(MainActivity.this, downloadProgressDialog, targetFilePath);
         downloadTask.execute(url);
     }
 
-    private void unzipFiles(String message, String zippedFilePath, String targetFilePath){
+    private void unzipFiles(String message, String zippedFilePath, String targetFilePath) {
         // Jian Wei - declare the dialog as a member field of the activity
         ProgressDialog unzipProgressDialog = createProgressDialog(message);
 
@@ -113,7 +114,15 @@ public class MainActivity extends Activity {
     }
 
     public void goToCheckIn(View view) {
-        Intent intent = new Intent(MainActivity.this, CheckInActivity.class);
-        startActivity(intent);
+        SharedPreferences prefs = getSharedPreferences(PREFS_NRIC, 0);
+        String nricLog = prefs.getString("Nric", null);
+
+        if (nricLog != null) {
+            Intent intent = new Intent(MainActivity.this, AppointmentChecker.class);
+            startActivity(intent);
+        } else {
+            Intent intent = new Intent(MainActivity.this, NRICVerification.class);
+            startActivity(intent);
+        }
     }
 }

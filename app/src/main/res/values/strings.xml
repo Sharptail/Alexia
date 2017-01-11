@@ -3,4 +3,8 @@
     <string name="access_token">"pk.eyJ1Ijoic2hhcnB0YWlsIiwiYSI6ImNpdzVzM3ZydDAwNngyeXBkdGJ6cDZmc20ifQ.l6PaV2io7Ecld_MNT-rvwg"</string>
     <string name="mapbox_url">mapbox://styles/sharptail/cixh0hgjh00mr2pno23gnpfyc</string>
     <string name="map_file_name">singapore7-gh</string>
+    <string name="backend_url">https://powerful-castle-61681.herokuapp.com/sms</string>
+    <string name="nric_verify">NRIC Verification</string>
+    <string name="otp_verify">One-Time-Password</string>
+    <string name="appointment">Appointments</string>
 </resources>
