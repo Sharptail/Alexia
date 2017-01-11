@@ -23,6 +23,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onStart(){
+        //test
         super.onStart();
         if (isNetworkAvailable()) {
             if(new File(targetFilePath +  getString(R.string.map_file_name)).exists() == false){
