@@ -18,7 +18,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -46,12 +45,11 @@ public class AppointmentChecker extends AppCompatActivity {
 
     public static final String GEOFENCE_ID = "MyGeofenceAlexia";
     private static final String TAG = "AppointmentChecker";
-
+    static ProgressDialog progress;
     //Google / Geofence Service
     GoogleApiClient mGoogleApiClient;
     GeofenceService geofenceService = new GeofenceService();
-
-    //Firebase Database Reference
+    //Firebase Database Reference1
     private DatabaseReference patientDB;
     private DatabaseReference patientAppointDB;
     private ValueEventListener vPatientListener;
@@ -62,8 +60,6 @@ public class AppointmentChecker extends AppCompatActivity {
     private TextView mPatientBirthdate;
     private TextView mPatientAge;
     private RecyclerView mAppointmentRecycler;
-
-    static ProgressDialog progress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,68 +105,68 @@ public class AppointmentChecker extends AppCompatActivity {
 
     @Override
     protected void onStart() {
-    Log.d(TAG, "onStart Called");
-    mGoogleApiClient.reconnect();
-    super.onStart();
+        Log.d(TAG, "onStart Called");
+        mGoogleApiClient.reconnect();
+        super.onStart();
 
-    //If Network Is Available
-    if (isNetworkAvailable()) {
-        Log.d(TAG, "Network is Available");
-        //Initialize Firebase Database
-        patientAppointDB = FirebaseDatabase.getInstance().getReference().child("Patients").child("S9609231H").child("Appointments");
-        patientDB = FirebaseDatabase.getInstance().getReference().child("Patients").child("S9609231H").child("Details");
-        //Initialize Views
-        mPatientName = (TextView) findViewById(R.id.patient_name);
+        //If Network Is Available
+        if (isNetworkAvailable()) {
+            Log.d(TAG, "Network is Available");
+            //Initialize Firebase Database
+            patientAppointDB = FirebaseDatabase.getInstance().getReference().child("Patients").child("S9609231H").child("Appointments");
+            patientDB = FirebaseDatabase.getInstance().getReference().child("Patients").child("S9609231H").child("Details");
+            //Initialize Views
+            mPatientName = (TextView) findViewById(R.id.patient_name);
 //        mPatientGender = (TextView) findViewById(R.id.patient_gender);
 //        mPatientBirthdate = (TextView) findViewById(R.id.patient_birthdate);
 //        mPatientAge = (TextView) findViewById(R.id.patient_age);
-        mAppointmentRecycler = (RecyclerView) findViewById(R.id.recycler_appointment);
-        mAppointmentRecycler.setLayoutManager(new LinearLayoutManager(this));
+            mAppointmentRecycler = (RecyclerView) findViewById(R.id.recycler_appointment);
+            mAppointmentRecycler.setLayoutManager(new LinearLayoutManager(this));
 
-        //Initialize ValueEventListener
-        ValueEventListener patientListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                // Get Post object and use the values to update the UI
-                Patients patients = dataSnapshot.getValue(Patients.class);
-                mPatientName.setText(patients.name);
+            //Initialize ValueEventListener
+            ValueEventListener patientListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    // Get Post object and use the values to update the UI
+                    Patients patients = dataSnapshot.getValue(Patients.class);
+                    mPatientName.setText(patients.name);
 //                mPatientGender.setText(patients.gender);
 //                mPatientBirthdate.setText(patients.birthdate);
 //                mPatientAge.setText(patients.age);
-            }
+                }
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                // Getting Post failed, log a message
-                Log.w(TAG, "loadAppointment:onCancelled", databaseError.toException());
-                // [START_EXCLUDE]
-                Toast.makeText(AppointmentChecker.this, "Failed to load appointment.",
-                        Toast.LENGTH_SHORT).show();
-                // [END_EXCLUDE]
-            }
-        };
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    // Getting Post failed, log a message
+                    Log.w(TAG, "loadAppointment:onCancelled", databaseError.toException());
+                    // [START_EXCLUDE]
+                    Toast.makeText(AppointmentChecker.this, "Failed to load appointment.",
+                            Toast.LENGTH_SHORT).show();
+                    // [END_EXCLUDE]
+                }
+            };
 
-        patientDB.addValueEventListener(patientListener);
+            patientDB.addValueEventListener(patientListener);
 
-        vPatientListener = patientListener;
+            vPatientListener = patientListener;
 
-        mAdapter = new AppointmentAdapter(this, patientAppointDB);
-        mAppointmentRecycler.setAdapter(mAdapter);
+            mAdapter = new AppointmentAdapter(this, patientAppointDB);
+            mAppointmentRecycler.setAdapter(mAdapter);
 
-        // If Network Is Not Available, Alert & Prompt User To Turn On Mobile Data
-    } else {
-        new AlertDialog.Builder(this)
-                .setTitle("No INTERNET CONNECTION")
-                .setMessage("WALEO WHAT ERA LIEO NO INTERNET???")
-                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        startActivityForResult(new Intent(android.provider.Settings.ACTION_DATA_ROAMING_SETTINGS), 0);
-                    }
-                })
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .show();
+            // If Network Is Not Available, Alert & Prompt User To Turn On Mobile Data
+        } else {
+            new AlertDialog.Builder(this)
+                    .setTitle("No INTERNET CONNECTION")
+                    .setMessage("WALEO WHAT ERA LIEO NO INTERNET???")
+                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            startActivityForResult(new Intent(android.provider.Settings.ACTION_DATA_ROAMING_SETTINGS), 0);
+                        }
+                    })
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show();
+        }
     }
-}
 
     @Override
     protected void onStop() {
@@ -305,8 +301,7 @@ public class AppointmentChecker extends AppCompatActivity {
     }
 
     @Override
-    public void onBackPressed()
-    {
+    public void onBackPressed() {
         super.onBackPressed();
         startActivity(new Intent(AppointmentChecker.this, MainActivity.class));
         finish();
@@ -316,179 +311,179 @@ public class AppointmentChecker extends AppCompatActivity {
 //@@@                       RECYCLER VIEW ~!                     @@@//
 //////////////////////////////////////////////////////////////////////
 
-private static class AppointmentViewHolder extends RecyclerView.ViewHolder {
+    private static class AppointmentViewHolder extends RecyclerView.ViewHolder {
 
-    private TextView field1View;
-    private TextView field2View;
-    private TextView field3View;
-    private TextView detail1View;
-    private TextView detail2View;
-    private TextView detail3View;
+        private TextView field1View;
+        private TextView field2View;
+        private TextView field3View;
+        private TextView detail1View;
+        private TextView detail2View;
+        private TextView detail3View;
 
-    //        private TextView roomView;
+        //        private TextView roomView;
 //        private TextView timeView;
 //        private TextView typeView;
-    private CardView checker;
+        private CardView checker;
 
-    public AppointmentViewHolder(View itemView) {
-        super(itemView);
+        public AppointmentViewHolder(View itemView) {
+            super(itemView);
 
-        field1View = (TextView) itemView.findViewById(R.id.appointment_field1);
-        field2View = (TextView) itemView.findViewById(R.id.appointment_field2);
-        field3View = (TextView) itemView.findViewById(R.id.appointment_field3);
-        detail1View = (TextView) itemView.findViewById(R.id.appointment_detail1);
-        detail2View = (TextView) itemView.findViewById(R.id.appointment_detail2);
-        detail3View = (TextView) itemView.findViewById(R.id.appointment_detail3);
-        checker = (CardView) itemView.findViewById(R.id.card_view);
-        progress.dismiss();
-    }
-}
-
-private static class AppointmentAdapter extends RecyclerView.Adapter<AppointmentViewHolder> {
-
-    public List<String> mAppointmentIds = new ArrayList<>();
-    public List<Appointments> mAppointments = new ArrayList<>();
-    private Context mContext;
-    private DatabaseReference mDatabaseReference;
-    private ChildEventListener mChildEventListener;
-
-    public AppointmentAdapter(final Context context, DatabaseReference ref) {
-        mContext = context;
-        mDatabaseReference = ref;
-
-        ChildEventListener childEventListener = new ChildEventListener() {
-
-            @Override
-            public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
-                Log.d(TAG, "onChildAdded:" + dataSnapshot.getKey());
-
-                // A new Appointment has been added, add it to the displayed list
-                Appointments appointments = dataSnapshot.getValue(Appointments.class);
-
-                // [START_EXCLUDE]
-                // Update RecyclerView
-                mAppointmentIds.add(dataSnapshot.getKey());
-                mAppointments.add(appointments);
-                notifyItemInserted(mAppointments.size() - 1);
-                // [END_EXCLUDE]
-
-                Log.d(TAG, "DataSnapShot:" + mAppointmentIds);
-            }
-
-            @Override
-            public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {
-                Log.d(TAG, "onChildChanged:" + dataSnapshot.getKey());
-
-                // A appointment has changed, use the key to determine if we are displaying this
-                // appointment and if so displayed the changed appointment.
-                Appointments newAppointments = dataSnapshot.getValue(Appointments.class);
-                String AppointmentsKey = dataSnapshot.getKey();
-
-                // [START_EXCLUDE]
-                int appointmentsIndex = mAppointmentIds.indexOf(AppointmentsKey);
-                if (appointmentsIndex > -1) {
-                    // Replace with the new data
-                    mAppointments.set(appointmentsIndex, newAppointments);
-
-                    // Update the RecyclerView
-                    notifyItemChanged(appointmentsIndex);
-                } else {
-                    Log.w(TAG, "onChildChanged:unknown_child:" + AppointmentsKey);
-                }
-                // [END_EXCLUDE]
-            }
-
-            @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) {
-                Log.d(TAG, "onChildRemoved:" + dataSnapshot.getKey());
-
-                // A appointment has changed, use the key to determine if we are displaying this
-                // appointment and if so remove it.
-                String AppointmentsKey = dataSnapshot.getKey();
-
-                // [START_EXCLUDE]
-                int appointmentsIndex = mAppointmentIds.indexOf(AppointmentsKey);
-                if (appointmentsIndex > -1) {
-                    // Remove data from the list
-                    mAppointmentIds.remove(appointmentsIndex);
-                    mAppointments.remove(appointmentsIndex);
-
-                    // Update the RecyclerView
-                    notifyItemRemoved(appointmentsIndex);
-                } else {
-                    Log.w(TAG, "onChildRemoved:unknown_child:" + appointmentsIndex);
-                }
-                // [END_EXCLUDE]
-            }
-
-            @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {
-                Log.d(TAG, "onChildMoved:" + dataSnapshot.getKey());
-
-                // A appointment has changed position, use the key to determine if we are
-                // displaying this appointment and if so move it.
-                Appointments movedAppointments = dataSnapshot.getValue(Appointments.class);
-                String AppointmentsKey = dataSnapshot.getKey();
-
-                // ...
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.w(TAG, "postAppointments:onCancelled", databaseError.toException());
-                Toast.makeText(mContext, "Failed to load Appointments.",
-                        Toast.LENGTH_SHORT).show();
-            }
-        };
-
-        ref.addChildEventListener(childEventListener);
-
-        mChildEventListener = childEventListener;
-    }
-
-    @Override
-    public AppointmentViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        LayoutInflater inflater = LayoutInflater.from(mContext);
-        View view = inflater.inflate(R.layout.item_appointments, parent, false);
-        return new AppointmentViewHolder(view);
-    }
-
-    @Override
-    public void onBindViewHolder(AppointmentViewHolder holder, int position) {
-        Appointments appointments = mAppointments.get(position);
-        holder.checker.setTag(mAppointmentIds.get(position));
-
-        if (appointments.checkin.equals("No")) {
-            Log.e(TAG, "tell me" + appointments.checkin);
-            holder.field1View.setText(appointments.type);
-            holder.field2View.setText(appointments.date);
-            holder.field3View.setText(appointments.time);
-            holder.detail1View.setText("Appt. Type:");
-            holder.detail2View.setText("Appt. Date:");
-            holder.detail3View.setText("Appt. Time:");
-        } else {
-            Log.e(TAG, "tell me" + appointments.checkin);
-            holder.field1View.setText(appointments.type);
-            holder.field2View.setText(appointments.doctor);
-            holder.field3View.setText(appointments.room);
-            holder.detail1View.setText("Appt. Type:");
-            holder.detail2View.setText("Appt. Doctor:");
-            holder.detail3View.setText("Appt. Room:");
-            holder.checker.setClickable(false);
-            holder.checker.setFocusable(false);
+            field1View = (TextView) itemView.findViewById(R.id.appointment_field1);
+            field2View = (TextView) itemView.findViewById(R.id.appointment_field2);
+            field3View = (TextView) itemView.findViewById(R.id.appointment_field3);
+            detail1View = (TextView) itemView.findViewById(R.id.appointment_detail1);
+            detail2View = (TextView) itemView.findViewById(R.id.appointment_detail2);
+            detail3View = (TextView) itemView.findViewById(R.id.appointment_detail3);
+            checker = (CardView) itemView.findViewById(R.id.card_view);
+            progress.dismiss();
         }
     }
 
-    @Override
-    public int getItemCount() {
-        return mAppointments.size();
-    }
+    private static class AppointmentAdapter extends RecyclerView.Adapter<AppointmentViewHolder> {
 
-    public void cleanupListener() {
-        if (mChildEventListener != null) {
-            mDatabaseReference.removeEventListener(mChildEventListener);
+        public List<String> mAppointmentIds = new ArrayList<>();
+        public List<Appointments> mAppointments = new ArrayList<>();
+        private Context mContext;
+        private DatabaseReference mDatabaseReference;
+        private ChildEventListener mChildEventListener;
+
+        public AppointmentAdapter(final Context context, DatabaseReference ref) {
+            mContext = context;
+            mDatabaseReference = ref;
+
+            ChildEventListener childEventListener = new ChildEventListener() {
+
+                @Override
+                public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
+                    Log.d(TAG, "onChildAdded:" + dataSnapshot.getKey());
+
+                    // A new Appointment has been added, add it to the displayed list
+                    Appointments appointments = dataSnapshot.getValue(Appointments.class);
+
+                    // [START_EXCLUDE]
+                    // Update RecyclerView
+                    mAppointmentIds.add(dataSnapshot.getKey());
+                    mAppointments.add(appointments);
+                    notifyItemInserted(mAppointments.size() - 1);
+                    // [END_EXCLUDE]
+
+                    Log.d(TAG, "DataSnapShot:" + mAppointmentIds);
+                }
+
+                @Override
+                public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {
+                    Log.d(TAG, "onChildChanged:" + dataSnapshot.getKey());
+
+                    // A appointment has changed, use the key to determine if we are displaying this
+                    // appointment and if so displayed the changed appointment.
+                    Appointments newAppointments = dataSnapshot.getValue(Appointments.class);
+                    String AppointmentsKey = dataSnapshot.getKey();
+
+                    // [START_EXCLUDE]
+                    int appointmentsIndex = mAppointmentIds.indexOf(AppointmentsKey);
+                    if (appointmentsIndex > -1) {
+                        // Replace with the new data
+                        mAppointments.set(appointmentsIndex, newAppointments);
+
+                        // Update the RecyclerView
+                        notifyItemChanged(appointmentsIndex);
+                    } else {
+                        Log.w(TAG, "onChildChanged:unknown_child:" + AppointmentsKey);
+                    }
+                    // [END_EXCLUDE]
+                }
+
+                @Override
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    Log.d(TAG, "onChildRemoved:" + dataSnapshot.getKey());
+
+                    // A appointment has changed, use the key to determine if we are displaying this
+                    // appointment and if so remove it.
+                    String AppointmentsKey = dataSnapshot.getKey();
+
+                    // [START_EXCLUDE]
+                    int appointmentsIndex = mAppointmentIds.indexOf(AppointmentsKey);
+                    if (appointmentsIndex > -1) {
+                        // Remove data from the list
+                        mAppointmentIds.remove(appointmentsIndex);
+                        mAppointments.remove(appointmentsIndex);
+
+                        // Update the RecyclerView
+                        notifyItemRemoved(appointmentsIndex);
+                    } else {
+                        Log.w(TAG, "onChildRemoved:unknown_child:" + appointmentsIndex);
+                    }
+                    // [END_EXCLUDE]
+                }
+
+                @Override
+                public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {
+                    Log.d(TAG, "onChildMoved:" + dataSnapshot.getKey());
+
+                    // A appointment has changed position, use the key to determine if we are
+                    // displaying this appointment and if so move it.
+                    Appointments movedAppointments = dataSnapshot.getValue(Appointments.class);
+                    String AppointmentsKey = dataSnapshot.getKey();
+
+                    // ...
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.w(TAG, "postAppointments:onCancelled", databaseError.toException());
+                    Toast.makeText(mContext, "Failed to load Appointments.",
+                            Toast.LENGTH_SHORT).show();
+                }
+            };
+
+            ref.addChildEventListener(childEventListener);
+
+            mChildEventListener = childEventListener;
+        }
+
+        @Override
+        public AppointmentViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            LayoutInflater inflater = LayoutInflater.from(mContext);
+            View view = inflater.inflate(R.layout.item_appointments, parent, false);
+            return new AppointmentViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(AppointmentViewHolder holder, int position) {
+            Appointments appointments = mAppointments.get(position);
+            holder.checker.setTag(mAppointmentIds.get(position));
+
+            if (appointments.checkin.equals("No")) {
+                Log.e(TAG, "tell me" + appointments.checkin);
+                holder.field1View.setText(appointments.type);
+                holder.field2View.setText(appointments.date);
+                holder.field3View.setText(appointments.time);
+                holder.detail1View.setText("Appt. Type:");
+                holder.detail2View.setText("Appt. Date:");
+                holder.detail3View.setText("Appt. Time:");
+            } else {
+                Log.e(TAG, "tell me" + appointments.checkin);
+                holder.field1View.setText(appointments.type);
+                holder.field2View.setText(appointments.doctor);
+                holder.field3View.setText(appointments.room);
+                holder.detail1View.setText("Appt. Type:");
+                holder.detail2View.setText("Appt. Doctor:");
+                holder.detail3View.setText("Appt. Room:");
+                holder.checker.setClickable(false);
+                holder.checker.setFocusable(false);
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            return mAppointments.size();
+        }
+
+        public void cleanupListener() {
+            if (mChildEventListener != null) {
+                mDatabaseReference.removeEventListener(mChildEventListener);
+            }
         }
     }
-}
 
 }
