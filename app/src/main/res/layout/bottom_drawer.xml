@@ -6,70 +6,201 @@
     android:id="@+id/bottom_drawer"
     android:background="?attr/colorPrimary">
 
-    <LinearLayout
+    <Button
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="1">
-        <TextView
-            android:id="@+id/drawer_title"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="0.6"
-            android:gravity="left|center"
-            android:textSize="18sp"
-            android:text="What do you want to do?"/>
+        android:layout_height="30dp"
+        android:textSize="10sp"
+        android:onClick="toggleDrawer"
+        android:id="@+id/expandButton"
+        android:text="^"/>
+
+    <LinearLayout
+        android:id="@+id/first_layout"
+        android:layout_width="match_parent"
+        android:layout_height="fill_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="1">
+            <TextView
+                android:id="@+id/drawer_title"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="0.6"
+                android:gravity="left|center"
+                android:textSize="18sp"
+                android:text="What do you want to do?"/>
 
 
-        <Button
-            android:layout_width="49dp"
-            android:layout_height="match_parent"
-            android:text="Show ATM"
-            android:onClick="showATM"
-            android:textSize="10sp"
-            android:layout_weight="0.2" />
+            <Button
+                android:layout_width="49dp"
+                android:layout_height="match_parent"
+                android:text="Show ATM"
+                android:onClick="showATM"
+                android:textSize="10sp"
+                android:layout_weight="0.2" />
 
-        <Button
-            android:layout_width="49dp"
-            android:layout_height="match_parent"
-            android:text="X"
-            android:onClick="closeDrawer"
-            android:layout_weight="0.2" />
+            <Button
+                android:layout_width="49dp"
+                android:layout_height="match_parent"
+                android:text="X"
+                android:onClick="closeDrawer"
+                android:layout_weight="0.2" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_weight="0.95">
+
+            <Button
+                android:id="@+id/nearby_button"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="0.5"
+                android:text="Nearby ATM"
+                android:onClick="goToNearbyATM"/>
+
+
+            <Button
+                android:id="@+id/routing_button"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="0.5"
+                android:text="Go To"
+                android:onClick="openGoTo"/>
+
+        </LinearLayout>
 
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/second_layout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_weight="0.95">
+        android:layout_height="fill_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
 
-        <Button
-            android:id="@+id/nearby_button"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="0.5"
-            android:text="Nearby ATM"
-            android:onClick="goToNearbyATM"/>
-
-
-        <Button
-            android:id="@+id/routing_button"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="0.5"
-            android:text="Go To"
-            android:onClick="openGoTo"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="1">
+            <TextView
+                android:id="@+id/drawer_title2"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="0.6"
+                android:gravity="left|center"
+                android:textSize="18sp"
+                android:text="Click Next"/>
 
 
-        <Button
-            android:id="@+id/next_button"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:text="Next"
-            android:onClick="nextPos"
-            android:visibility="gone"/>
+            <Button
+                android:layout_width="49dp"
+                android:layout_height="match_parent"
+                android:text="Show ATM"
+                android:onClick="showATM"
+                android:textSize="10sp"
+                android:layout_weight="0.2" />
+
+            <Button
+                android:layout_width="49dp"
+                android:layout_height="match_parent"
+                android:text="X"
+                android:onClick="closeDrawer"
+                android:layout_weight="0.2" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_weight="0.95">
+
+            <Button
+                android:id="@+id/next_button"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Next"
+                android:onClick="nextPos"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/third_layout"
+        android:layout_width="match_parent"
+        android:layout_height="fill_parent"
+        android:orientation="vertical"
+        android:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="1">
+            <TextView
+                android:id="@+id/drawer_title3"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="0.6"
+                android:gravity="left|center"
+                android:textSize="18sp"
+                android:text="Go To Where?"/>
+
+
+            <Button
+                android:layout_width="49dp"
+                android:layout_height="match_parent"
+                android:text="Show ATM"
+                android:onClick="showATM"
+                android:textSize="10sp"
+                android:layout_weight="0.2" />
+
+            <Button
+                android:layout_width="49dp"
+                android:layout_height="match_parent"
+                android:text="X"
+                android:onClick="closeDrawer"
+                android:layout_weight="0.2" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_weight="0.95">
+
+            <SearchView
+                android:id="@+id/room_search_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentTop="true"
+                android:layout_alignRight="@+id/listView1"
+                android:layout_marginLeft="14dp"
+                android:queryHint="Search..">
+            </SearchView>
+            <ListView
+                android:id="@+id/room_list_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_below="@+id/searchView1" >
+            </ListView>
+
+        </LinearLayout>
 
     </LinearLayout>
 
