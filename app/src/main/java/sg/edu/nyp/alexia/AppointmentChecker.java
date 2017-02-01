@@ -46,6 +46,9 @@ public class AppointmentChecker extends AppCompatActivity {
     public static final String GEOFENCE_ID = "MyGeofenceAlexia";
     private static final String TAG = "AppointmentChecker";
     static ProgressDialog progress;
+    public List<String> mAppointmentIds = new ArrayList<>();
+    public List<Appointments> mAppointments = new ArrayList<>();
+    public int mAppointmentIndex;
     //Google / Geofence Service
     GoogleApiClient mGoogleApiClient;
     GeofenceService geofenceService = new GeofenceService();
@@ -60,6 +63,9 @@ public class AppointmentChecker extends AppCompatActivity {
     private TextView mPatientBirthdate;
     private TextView mPatientAge;
     private RecyclerView mAppointmentRecycler;
+    private Context mContext;
+    private DatabaseReference mDatabaseReference;
+    private ChildEventListener mChildEventListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -269,8 +275,17 @@ public class AppointmentChecker extends AppCompatActivity {
 
         final String firebaseButtonView;
         firebaseButtonView = view.getTag().toString();
-        if (patientAppointDB.child(firebaseButtonView).child("checkin").equals("No")) {
-            if (geofenceService.getInGeoGeoFence() == true) {
+//        mAppointments.get(firebaseButtonView)
+        for (int i = 0; i < mAppointmentIds.size(); i++) {
+            Log.e("mAppointmentIds", String.valueOf(mAppointmentIds.get(i)));
+            if (mAppointmentIds.get(i).equals(firebaseButtonView)) {
+                mAppointmentIndex = mAppointmentIds.indexOf(mAppointmentIds.get(i));
+            } else {
+
+            }
+        }
+        if (mAppointments.get(mAppointmentIndex).getCheckin().equals("No")) {
+            if (geofenceService.getInGeoGeoFence()) {
                 new AlertDialog.Builder(this)
                         .setTitle("Appointment")
                         .setMessage("Would you like to check in your appointment?")
@@ -301,10 +316,9 @@ public class AppointmentChecker extends AppCompatActivity {
         } else {
             Log.e(TAG, "CHECKED IN ALREADY LIEO LA");
             Intent intent = new Intent(this, RoutingActivity.class);
-            intent.putExtra("result","Big Room");
+            intent.putExtra("result", mAppointments.get(mAppointmentIndex).getRoom());
             startActivity(intent);
         }
-
     }
 
     @Override
@@ -327,7 +341,7 @@ public class AppointmentChecker extends AppCompatActivity {
         private TextView detail2View;
         private TextView detail3View;
 
-        //        private TextView roomView;
+//        private TextView roomView;
 //        private TextView timeView;
 //        private TextView typeView;
         private CardView checker;
@@ -347,13 +361,7 @@ public class AppointmentChecker extends AppCompatActivity {
         }
     }
 
-    private static class AppointmentAdapter extends RecyclerView.Adapter<AppointmentViewHolder> {
-
-        public List<String> mAppointmentIds = new ArrayList<>();
-        public List<Appointments> mAppointments = new ArrayList<>();
-        private Context mContext;
-        private DatabaseReference mDatabaseReference;
-        private ChildEventListener mChildEventListener;
+    private class AppointmentAdapter extends RecyclerView.Adapter<AppointmentViewHolder> {
 
         public AppointmentAdapter(final Context context, DatabaseReference ref) {
             mContext = context;
@@ -477,8 +485,8 @@ public class AppointmentChecker extends AppCompatActivity {
                 holder.detail1View.setText("Appt. Type:");
                 holder.detail2View.setText("Appt. Doctor:");
                 holder.detail3View.setText("Appt. Room:");
-                holder.checker.setClickable(false);
-                holder.checker.setFocusable(false);
+//                holder.checker.setClickable(false);
+//                holder.checker.setFocusable(false);
             }
         }
 

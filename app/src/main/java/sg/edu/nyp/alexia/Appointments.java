@@ -12,8 +12,20 @@ public class Appointments {
     public String date;
     public String time;
     public String type;
+
+    public String getCheckin() {
+        return checkin;
+    }
+
     public String checkin;
     public String doctor;
+
+    public String getRoom() {
+        return room;
+    }
+
+
+
     public String room;
     public Map<String, Boolean> appoint = new HashMap<>();
 

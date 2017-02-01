@@ -292,6 +292,13 @@ public class RoutingActivity extends Activity {
     }
 
     @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        startActivity(new Intent(RoutingActivity.this, MainActivity.class));
+        finish();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         mapView.onDestroy();
