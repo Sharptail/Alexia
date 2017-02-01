@@ -269,35 +269,42 @@ public class AppointmentChecker extends AppCompatActivity {
 
         final String firebaseButtonView;
         firebaseButtonView = view.getTag().toString();
+        if (patientAppointDB.child(firebaseButtonView).child("checkin").equals("No")) {
+            if (geofenceService.getInGeoGeoFence() == true) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Appointment")
+                        .setMessage("Would you like to check in your appointment?")
+                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                //Action
+                                patientAppointDB.child(firebaseButtonView).child("checkin").setValue("Yes");
+                            }
+                        })
+                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                //Action
+                            }
+                        })
+                        .show();
 
-        if (geofenceService.getInGeoGeoFence() == true) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Appointment")
-                    .setMessage("Would you like to check in your appointment?")
-                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            //Action
-                            patientAppointDB.child(firebaseButtonView).child("checkin").setValue("Yes");
-                        }
-                    })
-                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            //Action
-                        }
-                    })
-                    .show();
-
+            } else {
+                new AlertDialog.Builder(this)
+                        .setTitle("Appointment")
+                        .setMessage("Please Get Closer!")
+                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                //Action
+                            }
+                        })
+                        .show();
+            }
         } else {
-            new AlertDialog.Builder(this)
-                    .setTitle("Appointment")
-                    .setMessage("Please Get Closer!")
-                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            //Action
-                        }
-                    })
-                    .show();
+            Log.e(TAG, "CHECKED IN ALREADY LIEO LA");
+            Intent intent = new Intent(this, RoutingActivity.class);
+            intent.putExtra("result","Big Room");
+            startActivity(intent);
         }
+
     }
 
     @Override
@@ -336,6 +343,7 @@ public class AppointmentChecker extends AppCompatActivity {
             detail3View = (TextView) itemView.findViewById(R.id.appointment_detail3);
             checker = (CardView) itemView.findViewById(R.id.card_view);
             progress.dismiss();
+
         }
     }
 
