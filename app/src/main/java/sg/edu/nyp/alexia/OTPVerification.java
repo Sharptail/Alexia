@@ -10,7 +10,12 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import static java.security.AccessController.getContext;
 
 public class OTPVerification extends AppCompatActivity {
 
@@ -19,13 +24,31 @@ public class OTPVerification extends AppCompatActivity {
     private static final String TAG = "OTPVerification";
     String output;
     int tempid;
-    private String[] edtid = new String[]{"et1", "et2", "et3", "et4", "et5", "et6"};
-    private EditText[] editTextView = new EditText[6];
+    static String[] edtid = new String[]{"et1", "et2", "et3", "et4", "et5", "et6"};
+    static EditText[] editTextView = new EditText[6];
+
+    static EditText otp1;
+    static EditText otp2;
+    static EditText otp3;
+    static EditText otp4;
+    static EditText otp5;
+    static EditText otp6;
+
+    static Button button;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.otp_verify);
+
+        otp1 = (EditText) findViewById(R.id.et1);
+        otp2 = (EditText) findViewById(R.id.et2);
+        otp3 = (EditText) findViewById(R.id.et3);
+        otp4 = (EditText) findViewById(R.id.et4);
+        otp5 = (EditText) findViewById(R.id.et5);
+        otp6 = (EditText) findViewById(R.id.et6);
+
+        button = (Button)findViewById(R.id.gk);
 
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 
@@ -80,8 +103,7 @@ public class OTPVerification extends AppCompatActivity {
     }
 
     @Override
-    public void onBackPressed() {
-    }
+    public void onBackPressed() {    }
 
     public void display(View view) {
         StringBuilder sb = new StringBuilder();
@@ -101,6 +123,8 @@ public class OTPVerification extends AppCompatActivity {
 
             Intent intent = new Intent(OTPVerification.this, AppointmentChecker.class);
             startActivity(intent);
+        } else {
+            Toast.makeText(getApplicationContext(), "Invalid OTP!", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -116,5 +140,20 @@ public class OTPVerification extends AppCompatActivity {
         editTextView[0].setFocusableInTouchMode(true);
         editTextView[0].requestFocus();
         editTextView[0].setSelected(true);
+    }
+
+    public void receivedSms(String message) {
+        try {
+            Log.d("message is receive", "Space=" + message);
+            String[] ecs = message.split("");
+            for (int i = 1; i <= ecs.length; i++) {
+                editTextView[i - 1].setText(ecs[i]);
+                if (i == 6) {
+                    button.performClick();
+                }
+            }
+        } catch (Exception e) {
+            Log.e("message not receive", e.getMessage() + "");
+        }
     }
 }

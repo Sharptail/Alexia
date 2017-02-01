@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -87,6 +88,8 @@ public class NRICVerification extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
+                openApp(NRICVerification.this, "streetdirectory.mobile");
+
                 progress = ProgressDialog.show(NRICVerification.this, "Sending SMS",
                         "Please Wait A Moment", true);
 
@@ -103,12 +106,18 @@ public class NRICVerification extends AppCompatActivity {
                                     setSmsPhone(snapshot.getValue().toString());
                                     Log.e(TAG, "This is snapshot: " + smsPhone);
                                     posting();
+                                    progress.dismiss();
+                                    Intent intent = new Intent(NRICVerification.this, OTPVerification.class);
+                                    startActivity(intent);
                                 }
 
                                 @Override
                                 public void onCancelled(DatabaseError databaseError) {
                                 }
                             });
+                        } else {
+                            progress.dismiss();
+                            Toast.makeText(getApplicationContext(), "Invalid NRIC!", Toast.LENGTH_SHORT).show();
                         }
                     }
 
@@ -143,9 +152,6 @@ public class NRICVerification extends AppCompatActivity {
                         public void run() {
                             Toast.makeText(getApplicationContext(), "SMS Sent!", Toast.LENGTH_SHORT).show();
                             mTo.setText("");
-                            progress.dismiss();
-                            Intent intent = new Intent(NRICVerification.this, OTPVerification.class);
-                            startActivity(intent);
                         }
                     });
                 }
@@ -160,6 +166,23 @@ public class NRICVerification extends AppCompatActivity {
         super.onStart();
         // Bla Bla Code
     }
+
+        public static boolean openApp(Context context, String packageName) {
+            PackageManager manager = context.getPackageManager();
+            try {
+                Intent i = manager.getLaunchIntentForPackage(packageName);
+                if (i == null) {
+                    return false;
+                    //throw new PackageManager.NameNotFoundException();
+                }
+                i.addCategory(Intent.CATEGORY_LAUNCHER);
+                context.startActivity(i);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
 
 
     // SMS Post to Heroku Server
