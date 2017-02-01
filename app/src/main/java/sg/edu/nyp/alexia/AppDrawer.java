@@ -7,8 +7,10 @@ import android.os.Handler;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -33,6 +35,10 @@ class AppDrawer {
     private Button nearbyButton;
     private Button goToButton;
     private Button nextButton;
+    private Button expandButton;
+    private LinearLayout first_layout;
+    private LinearLayout second_layout;
+    private LinearLayout third_layout;
 
     private enum S {OPEN_NOW, OPEN, CLOSE_NOW, CLOSE, CANCELED_NOW, CANCEL, TIME_OFF}     // States of animation
     private S animState = S.CLOSE;                                                        // Set state
@@ -48,11 +54,16 @@ class AppDrawer {
     private void initialize() {
         // Bottom Drawer
         bottomDrawer =  activity.findViewById(R.id.bottom_drawer);
+
         drawerTxt = (TextView) bottomDrawer.findViewById(R.id.drawer_txt);
         drawerTitle = (TextView) bottomDrawer.findViewById(R.id.drawer_title);
         nearbyButton = (Button) bottomDrawer.findViewById(R.id.nearby_button);
         goToButton = (Button) bottomDrawer.findViewById(R.id.routing_button);
         nextButton = (Button) bottomDrawer.findViewById(R.id.next_button);
+        expandButton = (Button) bottomDrawer.findViewById(R.id.expandButton);
+        first_layout = (LinearLayout) bottomDrawer.findViewById(R.id.first_layout);
+        second_layout = (LinearLayout) bottomDrawer.findViewById(R.id.second_layout);
+        third_layout = (LinearLayout) bottomDrawer.findViewById(R.id.third_layout);
 
         // Handler for timing for automatically closing the drawer
         handlCountDown = new Handler();
@@ -60,9 +71,31 @@ class AppDrawer {
 
     //********************************************************************************************** Open and Close the Drawer /Animation/
     private void drawerMovement(int movement){
+        final  ViewGroup.LayoutParams params = bottomDrawer.getLayoutParams();
+
         switch (movement) {
             case DRAWER_UP: // --------------------------------------------------------------------- Drawer UP
                 float heightStatusMenu = activity.getResources().getDimension(R.dimen.drawer_height);
+                expandButton.setText("^");
+                params.height = (int) heightStatusMenu;
+                bottomDrawer.setLayoutParams(params);
+                bottomDrawer.animate().translationY(mainlayoutHeight - heightStatusMenu)
+                        .setListener(new animationListener());
+                direct = DRAWER_UP;
+                break;
+
+            case DRAWER_DOWN: // ------------------------------------------------------------------- Drawer DOWN
+                bottomDrawer.animate().translationY(mainlayoutHeight)
+                        .setListener(new animationListener());
+                direct = DRAWER_DOWN;
+                break;
+        }
+    }
+
+    public void drawerMovement(int movement, float dimen){
+        switch (movement) {
+            case DRAWER_UP: // --------------------------------------------------------------------- Drawer UP
+                float heightStatusMenu = dimen;
                 bottomDrawer.animate().translationY(mainlayoutHeight - heightStatusMenu)
                         .setListener(new animationListener());
                 direct = DRAWER_UP;
@@ -182,18 +215,15 @@ class AppDrawer {
     private void refreshData(int currentDrawer){
         switch (currentDrawer) {
             case 1: // Drawer 1
-                drawerTitle.setText("What do you want to do?");
                 color = R.color.color_1;
-                nextButton.setVisibility(View.GONE);
-                nearbyButton.setVisibility(View.VISIBLE);
-                goToButton.setVisibility(View.VISIBLE);
+                first_layout.setVisibility(View.GONE);
+                second_layout.setVisibility(View.GONE);
+                third_layout.setVisibility(View.VISIBLE);
                 break;
             case 2: // Drawer 2
                 color = R.color.color_2;
-                drawerTitle.setText("Click Next");
-                nextButton.setVisibility(View.VISIBLE);
-                nearbyButton.setVisibility(View.GONE);
-                goToButton.setVisibility(View.GONE);
+                first_layout.setVisibility(View.GONE);
+                second_layout.setVisibility(View.VISIBLE);
                 break;
             case 3: // Drawer 3
                 color = R.color.color_3;

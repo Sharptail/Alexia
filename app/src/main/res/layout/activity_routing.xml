@@ -30,6 +30,12 @@
             android:id="@+id/drawer_txt"
             android:textSize="28sp"
             android:gravity="center_horizontal|center_vertical"/>
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="change"
+            android:onClick="change"/>
     </com.mapbox.mapboxsdk.maps.MapView>
 
     <include

@@ -6,6 +6,7 @@ package sg.edu.nyp.alexia.Class;
 
 public class Room {
     private String name;
+    private int level;
     private double lat;
     private double lng;
 
@@ -13,8 +14,9 @@ public class Room {
 
     }
 
-    public Room(String name, double lat, double lng) {
+    public Room(String name, int level, double lat, double lng) {
         this.name = name;
+        this.level = level;
         this.lat = lat;
         this.lng = lng;
     }
@@ -25,6 +27,14 @@ public class Room {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
     }
 
     public double getLat() {

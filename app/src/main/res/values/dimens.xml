@@ -4,6 +4,7 @@
     <dimen name="activity_vertical_margin">16dp</dimen>
 
     <dimen name="drawer_height">200dp</dimen>
+    <dimen name="drawer_height2">400dp</dimen>
 
     <dimen name="button_radius">80dp</dimen>
     <dimen name="button_margin">12dp</dimen>
