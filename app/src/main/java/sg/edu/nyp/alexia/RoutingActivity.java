@@ -31,6 +31,7 @@ import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.Spinner;
 import android.widget.Toast;
+import android.os.Handler;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -97,14 +98,14 @@ public class RoutingActivity extends Activity {
     private ArrayList<String> destination_coords = new ArrayList<String>();
     private boolean atmShowed = false;
     private int currentLevel = 3;
-    private LatLng stairsPoint = new LatLng(1.3792667,103.8495746);
+    private LatLng stairsPoint = new LatLng(1.3792667, 103.8495746);
     private ListView roomListView;
     private SearchView roomSearchView;
     private ListView nearbyListView;
     private SearchView nearbySearchView;
 
     @Override
-    protected void onStart(){
+    protected void onStart() {
         super.onStart();
     }
 
@@ -115,22 +116,27 @@ public class RoutingActivity extends Activity {
         setContentView(R.layout.activity_routing);
 
         appDrawer = new AppDrawer(this);
-        drawerLayout = (LinearLayout)findViewById(R.id.bottom_drawer);
-        routingLayout = (RelativeLayout)findViewById(R.id.routing_layout);
+        drawerLayout = (LinearLayout) findViewById(R.id.bottom_drawer);
+        routingLayout = (RelativeLayout) findViewById(R.id.routing_layout);
         expandButton = (Button) findViewById(R.id.expandButton);
+
         roomListView=(ListView) findViewById(R.id.room_list_view);
         roomSearchView=(SearchView) findViewById(R.id.room_search_view);
         nearbyListView=(ListView) findViewById(R.id.nearby_list_view);
         nearbySearchView=(SearchView) findViewById(R.id.nearby_search_view);
+
+        roomListView = (ListView) findViewById(R.id.room_list_view);
+        roomSearchView = (SearchView) findViewById(R.id.room_search_view);
+
 
         drawerParams = drawerLayout.getLayoutParams();
 
         roomSearchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View view, boolean b) {
-                if(b == true){
+                if (b == true) {
                     expandDrawer();
-                }else{
+                } else {
                     collapseDrawer();
                 }
             }
@@ -154,19 +160,19 @@ public class RoutingActivity extends Activity {
         myRef.child("fyproom").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                for (DataSnapshot roomSnapshot: dataSnapshot.getChildren()) {
+                for (DataSnapshot roomSnapshot : dataSnapshot.getChildren()) {
                     Room room = roomSnapshot.getValue(Room.class);
                     roomList.add(room);
                 }
 
-                for(int i = 0; i<roomList.size(); i++){
+                for (int i = 0; i < roomList.size(); i++) {
                     destination_location.add(roomList.get(i).getName());
-                    destination_coords.add(Double.toString(roomList.get(i).getLat())+","+Double.toString(roomList.get(i).getLng()));
+                    destination_coords.add(Double.toString(roomList.get(i).getLat()) + "," + Double.toString(roomList.get(i).getLng()));
                 }
                 //String [] destination_location = {"Big Room", "Last Room"};
                 //final String [] destination_coords = {"1.379166419501388,103.84994486842379","1.3790777965512575,103.84973653167629"};
 
-                final RoomAdapter adapter=new RoomAdapter(RoutingActivity.this, roomList);
+                final RoomAdapter adapter = new RoomAdapter(RoutingActivity.this, roomList);
                 roomListView.setAdapter(adapter);
 
                 roomSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -175,6 +181,7 @@ public class RoutingActivity extends Activity {
                         // TODO Auto-generated method stub
                         return false;
                     }
+
                     @Override
                     public boolean onQueryTextChange(String query) {
                         // TODO Auto-generated method stub
@@ -193,7 +200,7 @@ public class RoutingActivity extends Activity {
         myRef.child("nearby").child("atm").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                for (DataSnapshot roomSnapshot: dataSnapshot.getChildren()) {
+                for (DataSnapshot roomSnapshot : dataSnapshot.getChildren()) {
                     ATM atm = roomSnapshot.getValue(ATM.class);
                     atmList.add(atm);
                 }
@@ -216,18 +223,18 @@ public class RoutingActivity extends Activity {
         } else
             mapsFolder = new File(Environment.getExternalStorageDirectory(), "/graphhopper/maps/");
 
-        if (!mapsFolder.exists()){
+        if (!mapsFolder.exists()) {
             mapsFolder.mkdirs();
         }
 
-        mapView = (MapView)findViewById(R.id.mapview);
+        mapView = (MapView) findViewById(R.id.mapview);
         mapView.onCreate(savedInstanceState);
         // Add a MapboxMap
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
             public void onMapReady(final MapboxMap mapboxMap) {
                 //ZOOM TO LOCATION
-                final LatLng zoomLocation = new LatLng(1.3792949602146791,103.84983998176449);
+                final LatLng zoomLocation = new LatLng(1.3792949602146791, 103.84983998176449);
                 CameraPosition position = new CameraPosition.Builder()
                         .target(zoomLocation)
                         .zoom(19) // Sets the zoom
@@ -237,28 +244,34 @@ public class RoutingActivity extends Activity {
                 mapboxMap.setOnMapLongClickListener(new MapboxMap.OnMapLongClickListener() {
                     @Override
                     public void onMapLongClick(LatLng point) {
-                    if (!isReady()) {logUser("Load Map or Graph failed!");return;}
-                    if (shortestPathRunning) {logUser("Calculation still in progress");return;}
+                        if (!isReady()) {
+                            logUser("Load Map or Graph failed!");
+                            return;
+                        }
+                        if (shortestPathRunning) {
+                            logUser("Calculation still in progress");
+                            return;
+                        }
 
-                    if (start != null && end == null) {
-                        end = point;
-                        shortestPathRunning = true;
+                        if (start != null && end == null) {
+                            end = point;
+                            shortestPathRunning = true;
 
-                        // Add the marker to the map
-                        mapboxMap.addMarker(createMarkerItem(end, R.drawable.end, "Destination", ""));
+                            // Add the marker to the map
+                            mapboxMap.addMarker(createMarkerItem(end, R.drawable.end, "Destination", ""));
 
-                        // Calculate Shortest Path
-                        calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(), end.getLongitude(),mapboxMap);
-                    }else{
-                        userCurrentPos = 0;
-                        start = point;
-                        String test = Double.toString(start.getLatitude()) + "," + Double.toString(start.getLongitude());
-                        Log.e("Test", Double.toString(start.getLatitude())+","+Double.toString(start.getLongitude()));
-                        end = null;
-                        mapboxMap.clear();
-                        // Add the marker to the map
-                        mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "Start", ""));
-                    }
+                            // Calculate Shortest Path
+                            calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(), end.getLongitude(), mapboxMap);
+                        } else {
+                            userCurrentPos = 0;
+                            start = point;
+                            String test = Double.toString(start.getLatitude()) + "," + Double.toString(start.getLongitude());
+                            Log.e("Test", Double.toString(start.getLatitude()) + "," + Double.toString(start.getLongitude()));
+                            end = null;
+                            mapboxMap.clear();
+                            // Add the marker to the map
+                            mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "Start", ""));
+                        }
                     }
                 });
 
@@ -292,6 +305,19 @@ public class RoutingActivity extends Activity {
             }
         });
         initFiles(currentArea);
+
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            public void run() {
+                Bundle extras = getIntent().getExtras();
+                if (extras != null) {
+                    String value = extras.getString("result");
+                    Log.e("IntentApoint", value);
+                    AppCheckRoute(value);
+                }
+            }
+        }, 5000);
+
     }
 
     @Override
@@ -319,14 +345,21 @@ public class RoutingActivity extends Activity {
     }
 
     @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        startActivity(new Intent(RoutingActivity.this, MainActivity.class));
+        finish();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         mapView.onDestroy();
     }
 
-    public void change(View view){
+    public void change(View view) {
         mapView.setStyleUrl(getString(R.string.mapbox_url2));
-        currentArea="singapore72";
+        currentArea = "singapore72";
         loadGraphStorage();
     }
 
@@ -455,26 +488,26 @@ public class RoutingActivity extends Activity {
         }.execute();
     }
 
-    public void openQRScanner(View view){
+    public void openQRScanner(View view) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == -1) {
             requestPermissions(new String[]{
                     Manifest.permission.CAMERA
-            },1234);
-        }else{
+            }, 1234);
+        } else {
             Intent intent = new Intent(this, QRCodeScannerActivity.class);
-            startActivityForResult(intent,1);
+            startActivityForResult(intent, 1);
         }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == 1) {
-            if(resultCode == Activity.RESULT_OK){
-                String result=data.getStringExtra("result");
-                String [] coords = result.split(",");
+            if (resultCode == Activity.RESULT_OK) {
+                String result = data.getStringExtra("result");
+                String[] coords = result.split(",");
                 Double lat = Double.parseDouble(coords[0]);
                 Double lng = Double.parseDouble(coords[1]);
-                final LatLng points = new LatLng(lat,lng);
+                final LatLng points = new LatLng(lat, lng);
                 start = points;
                 end = null;
 
@@ -500,7 +533,7 @@ public class RoutingActivity extends Activity {
 
                         appDrawer.switchDrawer(1);
 
-                        for(int i = 0; i<atmList.size();i++){
+                        for (int i = 0; i < atmList.size(); i++) {
                             getDistance(start.getLatitude(), start.getLongitude(), atmList.get(i).getLat(), atmList.get(i).getLng(), i);
                         }
                     }
@@ -512,7 +545,7 @@ public class RoutingActivity extends Activity {
         }
     }
 
-    public void closeDrawer(View view){
+    public void closeDrawer(View view) {
         appDrawer.closeDrawer();
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
@@ -523,14 +556,13 @@ public class RoutingActivity extends Activity {
         resetMapView();
     }
 
-    public void toggleDrawer(View view){
-        if(drawerParams.height == (int) getResources().getDimension(R.dimen.drawer_height)){
+    public void toggleDrawer(View view) {
+        if (drawerParams.height == (int) getResources().getDimension(R.dimen.drawer_height)) {
             expandDrawer();
-        }else{
+        } else {
             collapseDrawer();
         }
     }
-
     public void expandDrawer(){
         DisplayMetrics displaymetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
@@ -544,9 +576,9 @@ public class RoutingActivity extends Activity {
         expandButton.setText("v");
     }
 
-    public void collapseDrawer(){
+    public void collapseDrawer() {
         drawerParams.height = (int) getResources().getDimension(R.dimen.drawer_height);
-        appDrawer.drawerMovement(1,getResources().getDimension(R.dimen.drawer_height));
+        appDrawer.drawerMovement(1, getResources().getDimension(R.dimen.drawer_height));
         new android.os.Handler().postDelayed(
                 new Runnable() {
                     public void run() {
@@ -557,7 +589,7 @@ public class RoutingActivity extends Activity {
         expandButton.setText("^");
     }
 
-    public void openGoTo(View view){
+    public void openGoTo(View view) {
         appDrawer.switchDrawer(2);
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
@@ -576,12 +608,12 @@ public class RoutingActivity extends Activity {
                 builder.setPositiveButton("Go", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        if(selectedLocationIndex >= 0){
-                            if(roomList.get(selectedLocationIndex).getLevel() == currentLevel){
-                                String [] coords = destination_coords.get(selectedLocationIndex).split(",");
+                        if (selectedLocationIndex >= 0) {
+                            if (roomList.get(selectedLocationIndex).getLevel() == currentLevel) {
+                                String[] coords = destination_coords.get(selectedLocationIndex).split(",");
                                 Double lat = Double.parseDouble(coords[0]);
                                 Double lng = Double.parseDouble(coords[1]);
-                                LatLng point = new LatLng(lat,lng);
+                                LatLng point = new LatLng(lat, lng);
                                 end = point;
 
                                 // Add the marker to the map
@@ -589,13 +621,13 @@ public class RoutingActivity extends Activity {
 
                                 // Calculate Shortest Path
                                 calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
-                                        end.getLongitude(),mapboxMap);
-                            }else{
+                                        end.getLongitude(), mapboxMap);
+                            } else {
                                 end = stairsPoint;
 
                                 // Calculate Shortest Path
                                 calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
-                                        end.getLongitude(),mapboxMap);
+                                        end.getLongitude(), mapboxMap);
                             }
                         }
                     }
@@ -626,17 +658,17 @@ public class RoutingActivity extends Activity {
         });
     }
 
-    public void nextPos(View view){
+    public void nextPos(View view) {
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
             public void onMapReady(MapboxMap mapboxMap) {
-                if(userCurrentPos+2<calculatedPoints.size()){
-                    LatLng newPosition = new LatLng(calculatedPoints.get(userCurrentPos+1).getLatitude(),calculatedPoints.get(userCurrentPos+1).getLongitude());
-                    LatLng nextPosition = new LatLng(calculatedPoints.get(userCurrentPos+2).getLatitude(),calculatedPoints.get(userCurrentPos+2).getLongitude());
+                if (userCurrentPos + 2 < calculatedPoints.size()) {
+                    LatLng newPosition = new LatLng(calculatedPoints.get(userCurrentPos + 1).getLatitude(), calculatedPoints.get(userCurrentPos + 1).getLongitude());
+                    LatLng nextPosition = new LatLng(calculatedPoints.get(userCurrentPos + 2).getLatitude(), calculatedPoints.get(userCurrentPos + 2).getLongitude());
                     startMarker.setPosition(newPosition);
                     mapboxMap.removePolyline(calculatedPolylines.get(userCurrentPos));
 
-                    Double bearing = getBearing(newPosition,nextPosition);
+                    Double bearing = getBearing(newPosition, nextPosition);
 //                    logUser(Double.toString(bearing));
                     //ZOOM TO LOCATION
                     CameraPosition position = new CameraPosition.Builder()
@@ -649,14 +681,14 @@ public class RoutingActivity extends Activity {
                             .newCameraPosition(position), 2000);
 
                     userCurrentPos++;
-                }else{
-                    if(end == stairsPoint){
+                } else {
+                    if (end == stairsPoint) {
                         // Change to current level
                         currentLevel = roomList.get(selectedLocationIndex).getLevel();
 
-                        if(currentLevel == 4){
+                        if (currentLevel == 4) {
                             mapboxMap.setStyleUrl(getString(R.string.mapbox_url2));
-                            currentArea="singapore72";
+                            currentArea = "singapore72";
                             loadGraphStorage();
                         }
 
@@ -665,10 +697,10 @@ public class RoutingActivity extends Activity {
                         start = stairsPoint;
                         // Add the marker to the map
                         startMarker = mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "You Are Here!", ""));
-                        String [] coords = destination_coords.get(selectedLocationIndex).split(",");
+                        String[] coords = destination_coords.get(selectedLocationIndex).split(",");
                         Double lat = Double.parseDouble(coords[0]);
                         Double lng = Double.parseDouble(coords[1]);
-                        LatLng point = new LatLng(lat,lng);
+                        LatLng point = new LatLng(lat, lng);
                         end = point;
 
                         // Add the marker to the map
@@ -676,35 +708,35 @@ public class RoutingActivity extends Activity {
 
                         // Calculate Shortest Path
                         calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
-                                end.getLongitude(),mapboxMap);
-                    }else{
+                                end.getLongitude(), mapboxMap);
+                    } else {
                         logUser("you have reached your destination");
                         appDrawer.closeDrawer();
-    //                    mapboxMap.clear();
+                        //                    mapboxMap.clear();
                     }
                 }
             }
         });
     }
 
-    private double getBearing(LatLng first, LatLng second){
+    private double getBearing(LatLng first, LatLng second) {
         double longitude1 = first.getLongitude();
         double longitude2 = second.getLongitude();
         double latitude1 = Math.toRadians(first.getLatitude());
         double latitude2 = Math.toRadians(second.getLatitude());
-        double longDiff= Math.toRadians(longitude2-longitude1);
-        double y= Math.sin(longDiff)*Math.cos(latitude2);
-        double x=Math.cos(latitude1)*Math.sin(latitude2)-Math.sin(latitude1)*Math.cos(latitude2)*Math.cos(longDiff);
+        double longDiff = Math.toRadians(longitude2 - longitude1);
+        double y = Math.sin(longDiff) * Math.cos(latitude2);
+        double x = Math.cos(latitude1) * Math.sin(latitude2) - Math.sin(latitude1) * Math.cos(latitude2) * Math.cos(longDiff);
 
-        return (Math.toDegrees(Math.atan2(y, x))+360)%360;
+        return (Math.toDegrees(Math.atan2(y, x)) + 360) % 360;
     }
 
-    private void resetMapView(){
+    private void resetMapView() {
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
             public void onMapReady(MapboxMap mapboxMap) {
                 //ZOOM TO LOCATION
-                final LatLng zoomLocation = new LatLng(1.3792949602146791,103.84983998176449);
+                final LatLng zoomLocation = new LatLng(1.3792949602146791, 103.84983998176449);
                 CameraPosition position = new CameraPosition.Builder()
                         .target(zoomLocation)
                         .zoom(19) // Sets the zoom
@@ -755,9 +787,9 @@ public class RoutingActivity extends Activity {
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
             public void onMapReady(MapboxMap mapboxMap) {
-                if(atmShowed == false){
+                if (atmShowed == false) {
                     //ZOOM TO LOCATION
-                    LatLng zoomLocation = new LatLng(1.3792949602146791,103.84983998176449);
+                    LatLng zoomLocation = new LatLng(1.3792949602146791, 103.84983998176449);
                     CameraPosition position = new CameraPosition.Builder()
                             .target(zoomLocation)
                             .zoom(19) // Sets the zoom
@@ -766,13 +798,13 @@ public class RoutingActivity extends Activity {
                             .build(); // Creates a CameraPosition from the builder
                     mapboxMap.animateCamera(CameraUpdateFactory
                             .newCameraPosition(position), 2000);
-                    for(int i = 0; i<atmList.size(); i++){
+                    for (int i = 0; i < atmList.size(); i++) {
                         LatLng point = new LatLng(atmList.get(i).getLat(), atmList.get(i).getLng());
-                        Marker marker = mapboxMap.addMarker(createMarkerItem(point,R.drawable.atm,atmList.get(i).getName(),""));
+                        Marker marker = mapboxMap.addMarker(createMarkerItem(point, R.drawable.atm, atmList.get(i).getName(), ""));
                         atmList.get(i).setMarker(marker);
                     }
                     atmShowed = true;
-                }else{
+                } else {
                     //ZOOM TO LOCATION
                     LatLng zoomLocation = new LatLng(start.getLatitude(), start.getLongitude());
                     CameraPosition position = new CameraPosition.Builder()
@@ -783,7 +815,7 @@ public class RoutingActivity extends Activity {
                             .build(); // Creates a CameraPosition from the builder
                     mapboxMap.animateCamera(CameraUpdateFactory
                             .newCameraPosition(position), 2000);
-                    for(int i = 0; i<atmList.size(); i++){
+                    for (int i = 0; i < atmList.size(); i++) {
                         mapboxMap.removeMarker(atmList.get(i).getMarker());
                     }
                     atmShowed = false;
@@ -792,11 +824,11 @@ public class RoutingActivity extends Activity {
         });
     }
 
-    public void goToNearbyATM(View view){
+    public void goToNearbyATM(View view) {
         double minDistance = atmList.get(0).getDistance();
         int minIndex = 0;
-        for(int i = 1; i < atmList.size(); i++){
-            if(atmList.get(i).getDistance() < minDistance){
+        for (int i = 1; i < atmList.size(); i++) {
+            if (atmList.get(i).getDistance() < minDistance) {
                 minDistance = atmList.get(i).getDistance();
                 minIndex = i;
             }
@@ -812,7 +844,7 @@ public class RoutingActivity extends Activity {
 
                 // Calculate Shortest Path
                 calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
-                        end.getLongitude(),mapboxMap);
+                        end.getLongitude(), mapboxMap);
 
                 appDrawer.switchDrawer(2);
             }
@@ -854,11 +886,11 @@ public class RoutingActivity extends Activity {
                     List<Polyline> polylines = new ArrayList<Polyline>();
 
                     if (points.size() > 0) {
-                        for(int i = 0; i<points.size()-1; i++){
+                        for (int i = 0; i < points.size() - 1; i++) {
                             // Draw polyline on map
                             Polyline polyline = mapboxMap.addPolyline(new PolylineOptions()
                                     .add(points.get(i))
-                                    .add(points.get(i+1))
+                                    .add(points.get(i + 1))
                                     .color(Color.parseColor("#F27777"))
                                     .width(3));
                             polylines.add(polyline);
@@ -866,7 +898,7 @@ public class RoutingActivity extends Activity {
                     }
                     setCalculatedPointsAndPolylines(points, polylines);
 
-                    Double bearing = getBearing(points.get(0),points.get(1));
+                    Double bearing = getBearing(points.get(0), points.get(1));
 
                     //ZOOM TO LOCATION
                     LatLng zoomLocation = new LatLng(start.getLatitude(), start.getLongitude());
@@ -914,13 +946,13 @@ public class RoutingActivity extends Activity {
     }
 
     // Jian Wei - get distance from async task
-    private void setDistanceFromAsync(Double distance, int index){
+    private void setDistanceFromAsync(Double distance, int index) {
         calculatedDistance = distance;
         atmList.get(index).setDistance(distance);
     }
 
     // Jian Wei - get the calculated points from asynctask
-    private void setCalculatedPointsAndPolylines(List<LatLng> points, List<Polyline> polylines){
+    private void setCalculatedPointsAndPolylines(List<LatLng> points, List<Polyline> polylines) {
         calculatedPoints = points;
         calculatedPolylines = polylines;
     }
@@ -936,7 +968,7 @@ public class RoutingActivity extends Activity {
     }
 
     // Jian Wei - Create an Icon object for the marker to use
-    private MarkerViewOptions createMarkerItem(LatLng point, int resource, String title, String snippet){
+    private MarkerViewOptions createMarkerItem(LatLng point, int resource, String title, String snippet) {
         IconFactory iconFactory = IconFactory.getInstance(RoutingActivity.this);
         Drawable iconDrawable = ContextCompat.getDrawable(RoutingActivity.this, resource);
         Bitmap bitmap = ((BitmapDrawable) iconDrawable).getBitmap();
@@ -947,7 +979,7 @@ public class RoutingActivity extends Activity {
         MarkerViewOptions marker = new MarkerViewOptions()
                 .position(point)
                 .icon(icon)
-                .anchor(0.5f,1)
+                .anchor(0.5f, 1)
                 .title(title)
                 .snippet(snippet);
 
@@ -966,5 +998,59 @@ public class RoutingActivity extends Activity {
     private void logUser(String str) {
         log(str);
         Toast.makeText(this, str, Toast.LENGTH_SHORT).show();
+    }
+
+    public void AppCheckRoute(String room) {
+
+        final int acrIndex = getIndexByname(room);
+        Log.e("ACR INDEX:" , String.valueOf(acrIndex));
+        mapView.getMapAsync(new OnMapReadyCallback() {
+
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+
+                mapboxMap.clear();
+                if (roomList.get(acrIndex).getLevel() == currentLevel) {
+                    String[] coords = destination_coords.get(acrIndex).split(",");
+                    Double lat = Double.parseDouble(coords[0]);
+                    Double lng = Double.parseDouble(coords[1]);
+                    LatLng point = new LatLng(lat, lng);
+                    end = point;
+
+                    // Add the marker to the map
+                    mapboxMap.addMarker(createMarkerItem(end, R.drawable.end, "Destination", ""));
+//
+//                    // Calculate Shortest Path
+//                    calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
+//                            end.getLongitude(), mapboxMap);
+                } else {
+                    end = stairsPoint;
+
+                    // Calculate Shortest Path
+//                    calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
+//                            end.getLongitude(), mapboxMap);
+                }
+            }
+        });
+    }
+
+    public int getIndexByname(String rName) {
+        Log.e("rName:" , rName);
+//        for (Room _room : roomList) {
+//            if (_room.getName().equals(rName)) {
+//                return roomList.indexOf(_room);
+//            }else{
+//                return 3;
+//            }
+//        }
+        for(int i = 0; i < roomList.size(); i++){
+            Log.e("roomList", String.valueOf(roomList.get(i).getName()));
+            if (roomList.get(i).getName().equals(rName)) {
+                return roomList.indexOf(roomList.get(i));
+            }else{
+
+            }
+        }
+        return -1;
     }
 }

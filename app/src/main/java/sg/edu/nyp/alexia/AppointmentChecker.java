@@ -3,12 +3,14 @@ package sg.edu.nyp.alexia;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
@@ -40,12 +42,16 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class AppointmentChecker extends AppCompatActivity {
 
     public static final String GEOFENCE_ID = "MyGeofenceAlexia";
     private static final String TAG = "AppointmentChecker";
     static ProgressDialog progress;
+    public List<String> mAppointmentIds = new ArrayList<>();
+    public List<Appointments> mAppointments = new ArrayList<>();
+    public int mAppointmentIndex;
     //Google / Geofence Service
     GoogleApiClient mGoogleApiClient;
     GeofenceService geofenceService = new GeofenceService();
@@ -60,6 +66,9 @@ public class AppointmentChecker extends AppCompatActivity {
     private TextView mPatientBirthdate;
     private TextView mPatientAge;
     private RecyclerView mAppointmentRecycler;
+    private Context mContext;
+    private DatabaseReference mDatabaseReference;
+    private ChildEventListener mChildEventListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -269,34 +278,49 @@ public class AppointmentChecker extends AppCompatActivity {
 
         final String firebaseButtonView;
         firebaseButtonView = view.getTag().toString();
+//        mAppointments.get(firebaseButtonView)
+        for (int i = 0; i < mAppointmentIds.size(); i++) {
+            Log.e("mAppointmentIds", String.valueOf(mAppointmentIds.get(i)));
+            if (mAppointmentIds.get(i).equals(firebaseButtonView)) {
+                mAppointmentIndex = mAppointmentIds.indexOf(mAppointmentIds.get(i));
+            } else {
 
-        if (geofenceService.getInGeoGeoFence() == true) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Appointment")
-                    .setMessage("Would you like to check in your appointment?")
-                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            //Action
-                            patientAppointDB.child(firebaseButtonView).child("checkin").setValue("Yes");
-                        }
-                    })
-                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            //Action
-                        }
-                    })
-                    .show();
+            }
+        }
+        if (mAppointments.get(mAppointmentIndex).getCheckin().equals("No")) {
+            if (geofenceService.getInGeoGeoFence()) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Appointment")
+                        .setMessage("Would you like to check in your appointment?")
+                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                //Action
+                                patientAppointDB.child(firebaseButtonView).child("checkin").setValue("Yes");
+                            }
+                        })
+                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                //Action
+                            }
+                        })
+                        .show();
 
+            } else {
+                new AlertDialog.Builder(this)
+                        .setTitle("Appointment")
+                        .setMessage("Please Get Closer!")
+                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                //Action
+                            }
+                        })
+                        .show();
+            }
         } else {
-            new AlertDialog.Builder(this)
-                    .setTitle("Appointment")
-                    .setMessage("Please Get Closer!")
-                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            //Action
-                        }
-                    })
-                    .show();
+            Log.e(TAG, "CHECKED IN ALREADY LIEO LA");
+            Intent intent = new Intent(this, RoutingActivity.class);
+            intent.putExtra("result", mAppointments.get(mAppointmentIndex).getRoom());
+            startActivity(intent);
         }
     }
 
@@ -336,16 +360,11 @@ public class AppointmentChecker extends AppCompatActivity {
             detail3View = (TextView) itemView.findViewById(R.id.appointment_detail3);
             checker = (CardView) itemView.findViewById(R.id.card_view);
             progress.dismiss();
+
         }
     }
 
-    private static class AppointmentAdapter extends RecyclerView.Adapter<AppointmentViewHolder> {
-
-        public List<String> mAppointmentIds = new ArrayList<>();
-        public List<Appointments> mAppointments = new ArrayList<>();
-        private Context mContext;
-        private DatabaseReference mDatabaseReference;
-        private ChildEventListener mChildEventListener;
+    private class AppointmentAdapter extends RecyclerView.Adapter<AppointmentViewHolder> {
 
         public AppointmentAdapter(final Context context, DatabaseReference ref) {
             mContext = context;
@@ -469,8 +488,8 @@ public class AppointmentChecker extends AppCompatActivity {
                 holder.detail1View.setText("Appt. Type:");
                 holder.detail2View.setText("Appt. Doctor:");
                 holder.detail3View.setText("Appt. Room:");
-                holder.checker.setClickable(false);
-                holder.checker.setFocusable(false);
+//                holder.checker.setClickable(false);
+//                holder.checker.setFocusable(false);
             }
         }
 
@@ -486,4 +505,24 @@ public class AppointmentChecker extends AppCompatActivity {
         }
     }
 
+    public void googMap(View view) {
+        double destinationLatitude = 1.379268;
+        double destinationLongitude = 103.849878;
+        String uri = String.format(Locale.ENGLISH, "http://maps.google.com/maps?daddr=%f,%f (%s)", destinationLatitude, destinationLongitude, "Block L - School of Information Technology");
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
+        intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException ex) {
+            Toast.makeText(this, "Please install a maps application", Toast.LENGTH_LONG).show();
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.maps" +
+                        "" +
+                        "&hl=en")));
+            } catch (android.content.ActivityNotFoundException anfe) {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.apps.maps&hl=en")));
+            }
+        }
+    }
 }
+

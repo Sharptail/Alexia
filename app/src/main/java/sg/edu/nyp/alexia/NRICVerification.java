@@ -33,7 +33,6 @@ import okhttp3.Response;
 
 public class NRICVerification extends AppCompatActivity {
 
-
     public static final String PREFS_NRIC = "MyNricFile";
     private static final String TAG = "NRICVerification";
     public static String OTP;
@@ -88,10 +87,7 @@ public class NRICVerification extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                openApp(NRICVerification.this, "streetdirectory.mobile");
-
-                progress = ProgressDialog.show(NRICVerification.this, "Sending SMS",
-                        "Please Wait A Moment", true);
+                progress = ProgressDialog.show(NRICVerification.this, "Sending SMS", "Please Wait A Moment", true);
 
                 rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
@@ -166,24 +162,6 @@ public class NRICVerification extends AppCompatActivity {
         super.onStart();
         // Bla Bla Code
     }
-
-        public static boolean openApp(Context context, String packageName) {
-            PackageManager manager = context.getPackageManager();
-            try {
-                Intent i = manager.getLaunchIntentForPackage(packageName);
-                if (i == null) {
-                    return false;
-                    //throw new PackageManager.NameNotFoundException();
-                }
-                i.addCategory(Intent.CATEGORY_LAUNCHER);
-                context.startActivity(i);
-                return true;
-            } catch (Exception e) {
-                return false;
-            }
-        }
-
-
 
     // SMS Post to Heroku Server
     Call post(String url, Callback callback) throws IOException {

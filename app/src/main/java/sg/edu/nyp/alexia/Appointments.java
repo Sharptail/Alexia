@@ -17,10 +17,11 @@ public class Appointments {
     public String room;
     public Map<String, Boolean> appoint = new HashMap<>();
 
+
+
     public Appointments() {
 
     }
-
     public Appointments( String date, String time, String type, String checkin, String doctor, String room) {
         this.date = date;
         this.time = time;
@@ -28,6 +29,14 @@ public class Appointments {
         this.checkin = checkin;
         this.doctor = doctor;
         this.room = room;
+    }
+
+    public String getCheckin() {
+        return checkin;
+    }
+
+    public String getRoom() {
+        return room;
     }
 
     @Exclude
