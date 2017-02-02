@@ -9,18 +9,29 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:background="@color/colorPrimaryDark">
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0.5"
             android:text="Routing"
-            android:onClick="goToRouting"/>
+            android:textColor="@color/white"
+            android:onClick="goToRouting"
+            android:drawableTop="@drawable/routing"
+            android:drawablePadding="-30dp"
+            android:paddingTop="80dp"
+            style="@style/Base.Widget.AppCompat.Button.Borderless"/>
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0.5"
             android:text="Check In"
-            android:onClick="goToCheckIn"/>
+            android:textColor="@color/white"
+            android:onClick="goToCheckIn"
+            android:drawableTop="@drawable/checkin"
+            android:drawablePadding="-30dp"
+            android:paddingTop="80dp"
+            style="@style/Base.Widget.AppCompat.Button.Borderless"/>
     </LinearLayout>
 </RelativeLayout>

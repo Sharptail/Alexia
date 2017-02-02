@@ -103,6 +103,7 @@ public class RoutingActivity extends Activity {
     private SearchView roomSearchView;
     private ListView nearbyListView;
     private SearchView nearbySearchView;
+    private boolean isEndFirst = false;
 
     @Override
     protected void onStart() {
@@ -509,12 +510,16 @@ public class RoutingActivity extends Activity {
                 Double lng = Double.parseDouble(coords[1]);
                 final LatLng points = new LatLng(lat, lng);
                 start = points;
-                end = null;
+                if(isEndFirst == false){
+                    end = null;
+                }
 
                 mapView.getMapAsync(new OnMapReadyCallback() {
                     @Override
                     public void onMapReady(final MapboxMap mapboxMap) {
-                        mapboxMap.clear();
+                        if(isEndFirst == false){
+                            mapboxMap.clear();
+                        }
                         userCurrentPos = 0;
                         // Add the marker to the map
                         startMarker = mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "You Are Here!", ""));
@@ -531,7 +536,14 @@ public class RoutingActivity extends Activity {
                         mapboxMap.animateCamera(CameraUpdateFactory
                                 .newCameraPosition(position), 2000);
 
-                        appDrawer.switchDrawer(1);
+                        if(isEndFirst == false){
+                            appDrawer.switchDrawer(1);
+                        }else if(end != null){
+                            appDrawer.switchDrawer(2);
+                            // Calculate Shortest Path
+                            calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
+                                    end.getLongitude(),mapboxMap);
+                        }
 
                         for (int i = 0; i < atmList.size(); i++) {
                             getDistance(start.getLatitude(), start.getLongitude(), atmList.get(i).getLat(), atmList.get(i).getLng(), i);
@@ -563,6 +575,7 @@ public class RoutingActivity extends Activity {
             collapseDrawer();
         }
     }
+
     public void expandDrawer(){
         DisplayMetrics displaymetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
@@ -711,6 +724,7 @@ public class RoutingActivity extends Activity {
                                 end.getLongitude(), mapboxMap);
                     } else {
                         logUser("you have reached your destination");
+                        isEndFirst = false;
                         appDrawer.closeDrawer();
                         //                    mapboxMap.clear();
                     }
@@ -1001,17 +1015,15 @@ public class RoutingActivity extends Activity {
     }
 
     public void AppCheckRoute(String room) {
-
-        final int acrIndex = getIndexByname(room);
-        Log.e("ACR INDEX:" , String.valueOf(acrIndex));
+        isEndFirst = true;
+        selectedLocationIndex = getIndexByname(room);
+//        Log.e("ACR INDEX:" , String.valueOf(acrIndex));
         mapView.getMapAsync(new OnMapReadyCallback() {
-
             @Override
             public void onMapReady(MapboxMap mapboxMap) {
-
                 mapboxMap.clear();
-                if (roomList.get(acrIndex).getLevel() == currentLevel) {
-                    String[] coords = destination_coords.get(acrIndex).split(",");
+                if (roomList.get(selectedLocationIndex).getLevel() == currentLevel) {
+                    String[] coords = destination_coords.get(selectedLocationIndex).split(",");
                     Double lat = Double.parseDouble(coords[0]);
                     Double lng = Double.parseDouble(coords[1]);
                     LatLng point = new LatLng(lat, lng);
@@ -1019,16 +1031,12 @@ public class RoutingActivity extends Activity {
 
                     // Add the marker to the map
                     mapboxMap.addMarker(createMarkerItem(end, R.drawable.end, "Destination", ""));
-//
-//                    // Calculate Shortest Path
-//                    calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
-//                            end.getLongitude(), mapboxMap);
+
+                    openQRScanner(roomListView);
                 } else {
                     end = stairsPoint;
 
-                    // Calculate Shortest Path
-//                    calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
-//                            end.getLongitude(), mapboxMap);
+                    openQRScanner(roomListView);
                 }
             }
         });
@@ -1036,13 +1044,6 @@ public class RoutingActivity extends Activity {
 
     public int getIndexByname(String rName) {
         Log.e("rName:" , rName);
-//        for (Room _room : roomList) {
-//            if (_room.getName().equals(rName)) {
-//                return roomList.indexOf(_room);
-//            }else{
-//                return 3;
-//            }
-//        }
         for(int i = 0; i < roomList.size(); i++){
             Log.e("roomList", String.valueOf(roomList.get(i).getName()));
             if (roomList.get(i).getName().equals(rName)) {
