@@ -1,20 +1,20 @@
-package sg.edu.nyp.alexia;
+package sg.edu.nyp.alexia.Class;
 
-    import android.content.Context;
-    import android.view.LayoutInflater;
-    import android.view.View;
-    import android.view.ViewGroup;
-    import android.widget.BaseAdapter;
-    import android.widget.Filter;
-    import android.widget.Filterable;
-    import android.widget.ImageView;
-    import android.widget.TextView;
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.Filter;
+import android.widget.Filterable;
+import android.widget.ImageView;
+import android.widget.TextView;
 
-    import java.util.ArrayList;
+import java.util.ArrayList;
 
-    import sg.edu.nyp.alexia.Class.Room;
+import sg.edu.nyp.alexia.R;
 
-    /**
+/**
      * Created by Jeffry on 24/1/17.
      */
 
@@ -95,7 +95,6 @@ package sg.edu.nyp.alexia;
                 results.count = filterList.size();
                 results.values = filterList;
             }
-
             return results;
         }
 

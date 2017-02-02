@@ -162,8 +162,8 @@
             <Button
                 android:layout_width="49dp"
                 android:layout_height="match_parent"
-                android:text="Show ATM"
-                android:onClick="showATM"
+                android:text="Nearby"
+                android:onClick="goToNearby"
                 android:textSize="10sp"
                 android:layout_weight="0.2" />
 
@@ -194,6 +194,73 @@
             </SearchView>
             <ListView
                 android:id="@+id/room_list_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_below="@+id/searchView1" >
+            </ListView>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/fourth_layout"
+        android:layout_width="match_parent"
+        android:layout_height="fill_parent"
+        android:orientation="vertical"
+        android:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="1">
+            <TextView
+                android:id="@+id/drawer_title4"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="0.6"
+                android:gravity="left|center"
+                android:textSize="18sp"
+                android:text="Nearby"/>
+
+
+            <Button
+                android:layout_width="49dp"
+                android:layout_height="match_parent"
+                android:text="SHOW ATM"
+                android:onClick="showATM"
+                android:textSize="10sp"
+                android:layout_weight="0.2" />
+
+            <Button
+                android:layout_width="49dp"
+                android:layout_height="match_parent"
+                android:text="X"
+                android:onClick="closeDrawer"
+                android:layout_weight="0.2" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_weight="0.95">
+
+            <SearchView
+                android:id="@+id/nearby_search_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentTop="true"
+                android:layout_alignRight="@+id/listView1"
+                android:layout_marginLeft="14dp"
+                android:queryHint="Search..">
+            </SearchView>
+            <ListView
+                android:id="@+id/nearby_list_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_alignParentLeft="true"

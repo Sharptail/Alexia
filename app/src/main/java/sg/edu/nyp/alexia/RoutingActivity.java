@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.ContextCompat;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -63,7 +64,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sg.edu.nyp.alexia.Class.ATM;
+import sg.edu.nyp.alexia.Class.Nearby;
+import sg.edu.nyp.alexia.Class.NearbyAdapter;
 import sg.edu.nyp.alexia.Class.Room;
+import sg.edu.nyp.alexia.Class.RoomAdapter;
 
 public class RoutingActivity extends Activity {
     private AppDrawer appDrawer;
@@ -96,6 +100,8 @@ public class RoutingActivity extends Activity {
     private LatLng stairsPoint = new LatLng(1.3792667,103.8495746);
     private ListView roomListView;
     private SearchView roomSearchView;
+    private ListView nearbyListView;
+    private SearchView nearbySearchView;
 
     @Override
     protected void onStart(){
@@ -114,10 +120,23 @@ public class RoutingActivity extends Activity {
         expandButton = (Button) findViewById(R.id.expandButton);
         roomListView=(ListView) findViewById(R.id.room_list_view);
         roomSearchView=(SearchView) findViewById(R.id.room_search_view);
+        nearbyListView=(ListView) findViewById(R.id.nearby_list_view);
+        nearbySearchView=(SearchView) findViewById(R.id.nearby_search_view);
 
         drawerParams = drawerLayout.getLayoutParams();
 
         roomSearchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View view, boolean b) {
+                if(b == true){
+                    expandDrawer();
+                }else{
+                    collapseDrawer();
+                }
+            }
+        });
+
+        nearbySearchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View view, boolean b) {
                 if(b == true){
@@ -149,6 +168,7 @@ public class RoutingActivity extends Activity {
 
                 final RoomAdapter adapter=new RoomAdapter(RoutingActivity.this, roomList);
                 roomListView.setAdapter(adapter);
+
                 roomSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                     @Override
                     public boolean onQueryTextSubmit(String arg0) {
@@ -239,6 +259,34 @@ public class RoutingActivity extends Activity {
                         // Add the marker to the map
                         mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "Start", ""));
                     }
+                    }
+                });
+
+                roomListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                        appDrawer.switchDrawer(2);
+                        selectedLocationIndex = i;
+                        if(roomList.get(selectedLocationIndex).getLevel() == currentLevel){
+                            String [] coords = destination_coords.get(selectedLocationIndex).split(",");
+                            Double lat = Double.parseDouble(coords[0]);
+                            Double lng = Double.parseDouble(coords[1]);
+                            LatLng point = new LatLng(lat,lng);
+                            end = point;
+
+                            // Add the marker to the map
+                            mapboxMap.addMarker(createMarkerItem(end, R.drawable.end, "Destination", ""));
+
+                            // Calculate Shortest Path
+                            calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
+                                    end.getLongitude(),mapboxMap);
+                        }else{
+                            end = stairsPoint;
+
+                            // Calculate Shortest Path
+                            calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
+                                    end.getLongitude(),mapboxMap);
+                        }
                     }
                 });
             }
@@ -484,9 +532,15 @@ public class RoutingActivity extends Activity {
     }
 
     public void expandDrawer(){
-        drawerParams.height = (int) getResources().getDimension(R.dimen.drawer_height2);
+        DisplayMetrics displaymetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+        int height = displaymetrics.heightPixels-100;
+
+//        drawerParams.height = (int) getResources().getDimension(R.dimen.drawer_height2);
+        drawerParams.height = height;
         drawerLayout.setLayoutParams(drawerParams);
-        appDrawer.drawerMovement(1,getResources().getDimension(R.dimen.drawer_height2));
+//        appDrawer.drawerMovement(1,getResources().getDimension(R.dimen.drawer_height2));
+        appDrawer.drawerMovement(1,height);
         expandButton.setText("v");
     }
 
@@ -659,6 +713,40 @@ public class RoutingActivity extends Activity {
                         .build(); // Creates a CameraPosition from the builder
                 mapboxMap.animateCamera(CameraUpdateFactory
                         .newCameraPosition(position), 2000);
+            }
+        });
+    }
+
+    public void goToNearby(View view){
+        appDrawer.switchDrawer(3);
+
+        ArrayList<Nearby> nearbies = new ArrayList<>();
+        nearbies.add(new Nearby("ATM",R.drawable.atm));
+        nearbies.add(new Nearby("Toilets", R.drawable.toilet));
+        nearbies.add(new Nearby("AED", R.drawable.aed));
+        nearbies.add(new Nearby("Elevator", R.drawable.elevator));
+
+        final NearbyAdapter adapter=new NearbyAdapter(RoutingActivity.this,nearbies);
+        nearbyListView.setAdapter(adapter);
+
+        nearbyListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                goToNearbyATM(view);
+            }
+        });
+
+        nearbySearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String arg0) {
+                // TODO Auto-generated method stub
+                return false;
+            }
+            @Override
+            public boolean onQueryTextChange(String query) {
+                // TODO Auto-generated method stub
+                adapter.getFilter().filter(query);
+                return false;
             }
         });
     }

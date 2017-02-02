@@ -14,7 +14,7 @@
             android:layout_height="50dp"
             android:layout_alignParentLeft="true"
             android:layout_alignParentTop="true"
-            android:src="@drawable/atm"
+            android:src="@drawable/end"
             android:padding="5dp"
             android:layout_weight="0.2"/>
 

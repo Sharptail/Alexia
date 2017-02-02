@@ -35,7 +35,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="change"
-            android:onClick="change"/>
+            android:onClick="change"
+            android:visibility="gone"/>
     </com.mapbox.mapboxsdk.maps.MapView>
 
     <include
