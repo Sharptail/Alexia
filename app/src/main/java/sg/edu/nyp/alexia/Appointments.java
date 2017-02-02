@@ -12,27 +12,16 @@ public class Appointments {
     public String date;
     public String time;
     public String type;
-
-    public String getCheckin() {
-        return checkin;
-    }
-
     public String checkin;
     public String doctor;
-
-    public String getRoom() {
-        return room;
-    }
-
-
-
     public String room;
     public Map<String, Boolean> appoint = new HashMap<>();
+
+
 
     public Appointments() {
 
     }
-
     public Appointments( String date, String time, String type, String checkin, String doctor, String room) {
         this.date = date;
         this.time = time;
@@ -40,6 +29,14 @@ public class Appointments {
         this.checkin = checkin;
         this.doctor = doctor;
         this.room = room;
+    }
+
+    public String getCheckin() {
+        return checkin;
+    }
+
+    public String getRoom() {
+        return room;
     }
 
     @Exclude
