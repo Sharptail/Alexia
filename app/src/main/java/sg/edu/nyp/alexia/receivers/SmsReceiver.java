@@ -1,4 +1,4 @@
-package sg.edu.nyp.alexia.Services;
+package sg.edu.nyp.alexia.receivers;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -9,7 +9,7 @@ import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.util.Log;
 
-import sg.edu.nyp.alexia.Checkin.OTPVerification;
+import sg.edu.nyp.alexia.checkin.OTPVerification;
 
 public class SmsReceiver extends BroadcastReceiver {
 

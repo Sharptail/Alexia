@@ -64,11 +64,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import sg.edu.nyp.alexia.Class.ATM;
-import sg.edu.nyp.alexia.Class.Nearby;
-import sg.edu.nyp.alexia.Class.NearbyAdapter;
-import sg.edu.nyp.alexia.Class.Room;
-import sg.edu.nyp.alexia.Class.RoomAdapter;
+import sg.edu.nyp.alexia.model.ATM;
+import sg.edu.nyp.alexia.model.Nearby;
+import sg.edu.nyp.alexia.model.NearbyAdapter;
+import sg.edu.nyp.alexia.model.Room;
+import sg.edu.nyp.alexia.model.RoomAdapter;
 
 public class RoutingActivity extends Activity {
     private AppDrawer appDrawer;

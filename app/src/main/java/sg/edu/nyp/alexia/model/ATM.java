@@ -1,4 +1,4 @@
-package sg.edu.nyp.alexia.Class;
+package sg.edu.nyp.alexia.model;
 
 import com.mapbox.mapboxsdk.annotations.Marker;
 

@@ -1,6 +1,7 @@
-package sg.edu.nyp.alexia.Checkin;
+package sg.edu.nyp.alexia.checkin;
 
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -15,6 +16,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import sg.edu.nyp.alexia.R;
+import sg.edu.nyp.alexia.receivers.SmsReceiver;
 
 public class OTPVerification extends AppCompatActivity {
 
@@ -32,8 +34,10 @@ public class OTPVerification extends AppCompatActivity {
     static EditText otp4;
     static EditText otp5;
     static EditText otp6;
-
     static Button button;
+
+    private SmsReceiver mSMSreceiver;
+    private IntentFilter mIntentFilter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,9 +51,10 @@ public class OTPVerification extends AppCompatActivity {
         otp5 = (EditText) findViewById(R.id.et5);
         otp6 = (EditText) findViewById(R.id.et6);
 
-        button = (Button)findViewById(R.id.gk);
+        button = (Button) findViewById(R.id.gk);
 
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+
 
         for (int i = 0; i < edtid.length; i++) {
             final int idtag = i;
@@ -99,6 +104,19 @@ public class OTPVerification extends AppCompatActivity {
                 });
             }
         }
+
+        mSMSreceiver = new SmsReceiver();
+        mIntentFilter = new IntentFilter();
+        mIntentFilter.addAction("android.provider.Telephony.SMS_RECEIVED");
+        registerReceiver(mSMSreceiver, mIntentFilter);
+    }
+
+    @Override
+    public void onDestroy()
+    {
+        super.onDestroy();
+        // Unregister the SMS receiver
+        unregisterReceiver(mSMSreceiver);
     }
 
     @Override
@@ -122,6 +140,7 @@ public class OTPVerification extends AppCompatActivity {
 
             Intent intent = new Intent(OTPVerification.this, AppointmentChecker.class);
             startActivity(intent);
+            finish();
         } else {
             Toast.makeText(getApplicationContext(), "Invalid OTP!", Toast.LENGTH_SHORT).show();
         }

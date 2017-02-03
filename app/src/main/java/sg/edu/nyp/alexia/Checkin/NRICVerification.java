@@ -1,4 +1,4 @@
-package sg.edu.nyp.alexia.Checkin;
+package sg.edu.nyp.alexia.checkin;
 
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -102,7 +102,7 @@ public class NRICVerification extends AppCompatActivity {
                                     Log.e(TAG, "This is snapshot: " + smsPhone);
                                     posting();
                                     progress.dismiss();
-                                    Intent intent = new Intent(NRICVerification.this, OTPVerification.class);
+                                    Intent intent = new Intent(NRICVerification.this, sg.edu.nyp.alexia.checkin.OTPVerification.class);
                                     startActivity(intent);
                                 }
 

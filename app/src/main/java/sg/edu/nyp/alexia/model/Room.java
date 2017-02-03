@@ -1,4 +1,4 @@
-package sg.edu.nyp.alexia.Class;
+package sg.edu.nyp.alexia.model;
 
 /**
  * Created by Jeffry on 5/1/17.

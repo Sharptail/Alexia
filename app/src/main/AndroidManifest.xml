@@ -44,25 +44,18 @@
         <activity android:name=".RoutingActivity" />
         <activity android:name=".QRCodeScannerActivity" />
         <activity
-            android:name=".Checkin.NRICVerification"
+            android:name=".checkin.NRICVerification"
             android:label="@string/nric_verify" />
         <activity
-            android:name=".Checkin.OTPVerification"
+            android:name=".checkin.OTPVerification"
             android:label="@string/otp_verify" />
         <activity
-            android:name=".Checkin.AppointmentChecker"
+            android:name=".checkin.AppointmentChecker"
             android:label="@string/appointment" />
 
         <service
-            android:name=".Services.GeofenceService"
+            android:name=".services.GeofenceService"
             android:enabled="true"
             android:exported="true" />
-
-        <receiver android:name=".Services.SmsReceiver">
-            <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
-            </intent-filter>
-        </receiver>
     </application>
-
 </manifest>

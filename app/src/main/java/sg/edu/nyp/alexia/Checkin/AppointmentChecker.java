@@ -1,4 +1,4 @@
-package sg.edu.nyp.alexia.Checkin;
+package sg.edu.nyp.alexia.checkin;
 
 import android.app.AlertDialog;
 import android.app.PendingIntent;
@@ -44,12 +44,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import sg.edu.nyp.alexia.Class.Appointments;
-import sg.edu.nyp.alexia.Class.Patients;
 import sg.edu.nyp.alexia.MainActivity;
 import sg.edu.nyp.alexia.R;
 import sg.edu.nyp.alexia.RoutingActivity;
-import sg.edu.nyp.alexia.Services.GeofenceService;
+import sg.edu.nyp.alexia.model.Appointments;
+import sg.edu.nyp.alexia.model.Patients;
+import sg.edu.nyp.alexia.services.GeofenceService;
 
 public class AppointmentChecker extends AppCompatActivity {
 
@@ -342,6 +342,26 @@ public class AppointmentChecker extends AppCompatActivity {
 //@@@                       RECYCLER VIEW ~!                     @@@//
 //////////////////////////////////////////////////////////////////////
 
+    public void googMap(View view) {
+        double destinationLatitude = 1.379268;
+        double destinationLongitude = 103.849878;
+        String uri = String.format(Locale.ENGLISH, "http://maps.google.com/maps?daddr=%f,%f (%s)", destinationLatitude, destinationLongitude, "Block L - School of Information Technology");
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
+        intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException ex) {
+            Toast.makeText(this, "Please install a maps application", Toast.LENGTH_LONG).show();
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.maps" +
+                        "" +
+                        "&hl=en")));
+            } catch (android.content.ActivityNotFoundException anfe) {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.apps.maps&hl=en")));
+            }
+        }
+    }
+
     private static class AppointmentViewHolder extends RecyclerView.ViewHolder {
 
         private TextView field1View;
@@ -508,26 +528,6 @@ public class AppointmentChecker extends AppCompatActivity {
         public void cleanupListener() {
             if (mChildEventListener != null) {
                 mDatabaseReference.removeEventListener(mChildEventListener);
-            }
-        }
-    }
-
-    public void googMap(View view) {
-        double destinationLatitude = 1.379268;
-        double destinationLongitude = 103.849878;
-        String uri = String.format(Locale.ENGLISH, "http://maps.google.com/maps?daddr=%f,%f (%s)", destinationLatitude, destinationLongitude, "Block L - School of Information Technology");
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
-        intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
-        try {
-            startActivity(intent);
-        } catch (ActivityNotFoundException ex) {
-            Toast.makeText(this, "Please install a maps application", Toast.LENGTH_LONG).show();
-            try {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.maps" +
-                        "" +
-                        "&hl=en")));
-            } catch (android.content.ActivityNotFoundException anfe) {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.apps.maps&hl=en")));
             }
         }
     }
