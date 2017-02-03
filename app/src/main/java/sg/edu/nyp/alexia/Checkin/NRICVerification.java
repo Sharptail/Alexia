@@ -1,10 +1,8 @@
-package sg.edu.nyp.alexia;
+package sg.edu.nyp.alexia.Checkin;
 
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -30,6 +28,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import sg.edu.nyp.alexia.R;
 
 public class NRICVerification extends AppCompatActivity {
 

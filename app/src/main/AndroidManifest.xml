@@ -44,21 +44,21 @@
         <activity android:name=".RoutingActivity" />
         <activity android:name=".QRCodeScannerActivity" />
         <activity
-            android:name=".NRICVerification"
+            android:name=".Checkin.NRICVerification"
             android:label="@string/nric_verify" />
         <activity
-            android:name=".OTPVerification"
+            android:name=".Checkin.OTPVerification"
             android:label="@string/otp_verify" />
         <activity
-            android:name=".AppointmentChecker"
+            android:name=".Checkin.AppointmentChecker"
             android:label="@string/appointment" />
 
         <service
-            android:name=".GeofenceService"
+            android:name=".Services.GeofenceService"
             android:enabled="true"
             android:exported="true" />
 
-        <receiver android:name=".SmsReceiver">
+        <receiver android:name=".Services.SmsReceiver">
             <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>

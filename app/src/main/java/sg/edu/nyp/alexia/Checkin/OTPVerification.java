@@ -1,4 +1,4 @@
-package sg.edu.nyp.alexia;
+package sg.edu.nyp.alexia.Checkin;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -12,10 +12,9 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import static java.security.AccessController.getContext;
+import sg.edu.nyp.alexia.R;
 
 public class OTPVerification extends AppCompatActivity {
 

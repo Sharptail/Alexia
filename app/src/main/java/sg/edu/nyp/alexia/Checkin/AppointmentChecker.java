@@ -1,4 +1,4 @@
-package sg.edu.nyp.alexia;
+package sg.edu.nyp.alexia.Checkin;
 
 import android.app.AlertDialog;
 import android.app.PendingIntent;
@@ -43,6 +43,13 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import sg.edu.nyp.alexia.Class.Appointments;
+import sg.edu.nyp.alexia.Class.Patients;
+import sg.edu.nyp.alexia.MainActivity;
+import sg.edu.nyp.alexia.R;
+import sg.edu.nyp.alexia.RoutingActivity;
+import sg.edu.nyp.alexia.Services.GeofenceService;
 
 public class AppointmentChecker extends AppCompatActivity {
 

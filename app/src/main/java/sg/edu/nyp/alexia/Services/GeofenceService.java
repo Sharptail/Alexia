@@ -1,4 +1,4 @@
-package sg.edu.nyp.alexia;
+package sg.edu.nyp.alexia.Services;
 
 import android.app.IntentService;
 import android.content.Intent;

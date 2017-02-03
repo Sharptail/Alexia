@@ -18,6 +18,9 @@ import com.mapbox.mapboxsdk.MapboxAccountManager;
 
 import java.io.File;
 
+import sg.edu.nyp.alexia.Checkin.AppointmentChecker;
+import sg.edu.nyp.alexia.Checkin.NRICVerification;
+
 public class MainActivity extends Activity {
     private String mapDownloadURL = "https://firebasestorage.googleapis.com/v0/b/mocktest-efa0d.appspot.com/o/singapore7-gh.zip?alt=media&token=752a6e87-1d69-4f23-9701-43e78f872a4b";
     private String targetFilePath = "/sdcard/Download/graphhopper/maps/";
@@ -54,7 +57,9 @@ public class MainActivity extends Activity {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 Manifest.permission.READ_PHONE_STATE,
                 Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WAKE_LOCK
+                Manifest.permission.WAKE_LOCK,
+                Manifest.permission.READ_SMS,
+                Manifest.permission.RECEIVE_SMS
         }, 1234);
     }
 
