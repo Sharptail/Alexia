@@ -26,6 +26,9 @@
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
 
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -57,5 +60,37 @@
             android:name=".services.GeofenceService"
             android:enabled="true"
             android:exported="true" />
+        <service
+            android:name=".services.SensorService"
+            android:enabled="true" />
+        <service
+            android:name=".services.GeoCheckinService"
+            android:enabled="true" />
+        <service
+            android:name=".services.BackgroundGeoService"
+            android:enabled="true" />
+        <receiver
+            android:name=".receivers.SensorRestarterBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:label="RestartServiceWhenStopped">
+            <intent-filter>
+                <action android:name="sg.edu.nyp.alexia.RestartSensor"/>
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".receivers.BootReceiver"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".receivers.AppRemindReceiver"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="sg.edu.nyp.alexia.AppRemindReceiver"/>
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

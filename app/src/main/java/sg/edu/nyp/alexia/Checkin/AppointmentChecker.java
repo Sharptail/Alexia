@@ -1,13 +1,12 @@
 package sg.edu.nyp.alexia.checkin;
 
+import android.app.ActivityManager;
 import android.app.AlertDialog;
-import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -23,16 +22,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.location.Geofence;
-import com.google.android.gms.location.GeofencingRequest;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -44,23 +34,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import sg.edu.nyp.alexia.model.Appointments;
+import sg.edu.nyp.alexia.model.MyNriceFile;
+import sg.edu.nyp.alexia.model.Patients;
 import sg.edu.nyp.alexia.MainActivity;
 import sg.edu.nyp.alexia.R;
 import sg.edu.nyp.alexia.RoutingActivity;
-import sg.edu.nyp.alexia.model.Appointments;
-import sg.edu.nyp.alexia.model.Patients;
+import sg.edu.nyp.alexia.services.GeoCheckinService;
 import sg.edu.nyp.alexia.services.GeofenceService;
 
 public class AppointmentChecker extends AppCompatActivity {
 
-    public static final String GEOFENCE_ID = "MyGeofenceAlexia";
     private static final String TAG = "AppointmentChecker";
     static ProgressDialog progress;
     public List<String> mAppointmentIds = new ArrayList<>();
     public List<Appointments> mAppointments = new ArrayList<>();
     public int mAppointmentIndex;
     //Google / Geofence Service
-    GoogleApiClient mGoogleApiClient;
     GeofenceService geofenceService = new GeofenceService();
     //Firebase Database Reference1
     private DatabaseReference patientDB;
@@ -76,39 +66,41 @@ public class AppointmentChecker extends AppCompatActivity {
     private Context mContext;
     private DatabaseReference mDatabaseReference;
     private ChildEventListener mChildEventListener;
+    public static String nricLog;
+    MyNriceFile MyNricFile = new MyNriceFile();
+    Intent mServiceIntent;
+    private GeoCheckinService mGeocheckinService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.appointment);
 
-        progress = ProgressDialog.show(this, "Loading",
-                "Please Wait A Moment", true);
+        nricLog = MyNricFile.getNric(this);
 
-        // Create an instance of GoogleAPIClient.
-        if (mGoogleApiClient == null) {
-            mGoogleApiClient = new GoogleApiClient.Builder(this)
-                    .addApi(LocationServices.API)
-                    .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-                        @Override
-                        public void onConnected(Bundle connectionHint) {
-                            Log.d(TAG, "Connected to GoogleApiClient");
-                            startLocationMonitoring();
-                        }
+        progress = ProgressDialog.show(this, "Loading", "Please Wait A Moment", true);
 
-                        @Override
-                        public void onConnectionSuspended(int cause) {
-                            Log.d(TAG, "Suspended Connection to GoogleApiClient");
-                        }
-                    })
-                    .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
-                        @Override
-                        public void onConnectionFailed(ConnectionResult result) {
-                            Log.d(TAG, "Failed to connect to GoogleApiClient - " + result.getErrorMessage());
-                        }
-                    })
-                    .build();
+        // Initialize GeoCheckinService
+        mGeocheckinService = new GeoCheckinService(AppointmentChecker.this);
+        mServiceIntent = new Intent(AppointmentChecker.this, mGeocheckinService.getClass());
+        if (nricLog != null) {
+            if (!isMyServiceRunning(mGeocheckinService.getClass())) {
+                startService(mServiceIntent);
+            }
         }
+    }
+
+    //Check if SensorService is running
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                Log.i ("isMyServiceRunning?", true+"");
+                return true;
+            }
+        }
+        Log.i ("isMyServiceRunning?", false+"");
+        return false;
     }
 
     //Network checker Method
@@ -122,20 +114,16 @@ public class AppointmentChecker extends AppCompatActivity {
     @Override
     protected void onStart() {
         Log.d(TAG, "onStart Called");
-        mGoogleApiClient.reconnect();
         super.onStart();
 
         //If Network Is Available
         if (isNetworkAvailable()) {
             Log.d(TAG, "Network is Available");
             //Initialize Firebase Database
-            patientAppointDB = FirebaseDatabase.getInstance().getReference().child("Patients").child("S9609231H").child("Appointments");
-            patientDB = FirebaseDatabase.getInstance().getReference().child("Patients").child("S9609231H").child("Details");
+            patientAppointDB = FirebaseDatabase.getInstance().getReference().child("Patients").child(nricLog).child("Appointments");
+            patientDB = FirebaseDatabase.getInstance().getReference().child("Patients").child(nricLog).child("Details");
             //Initialize Views
             mPatientName = (TextView) findViewById(R.id.patient_name);
-//        mPatientGender = (TextView) findViewById(R.id.patient_gender);
-//        mPatientBirthdate = (TextView) findViewById(R.id.patient_birthdate);
-//        mPatientAge = (TextView) findViewById(R.id.patient_age);
             mAppointmentRecycler = (RecyclerView) findViewById(R.id.recycler_appointment);
             mAppointmentRecycler.setLayoutManager(new LinearLayoutManager(this));
 
@@ -146,9 +134,6 @@ public class AppointmentChecker extends AppCompatActivity {
                     // Get Post object and use the values to update the UI
                     Patients patients = dataSnapshot.getValue(Patients.class);
                     mPatientName.setText(patients.name);
-//                mPatientGender.setText(patients.gender);
-//                mPatientBirthdate.setText(patients.birthdate);
-//                mPatientAge.setText(patients.age);
                 }
 
                 @Override
@@ -172,8 +157,8 @@ public class AppointmentChecker extends AppCompatActivity {
             // If Network Is Not Available, Alert & Prompt User To Turn On Mobile Data
         } else {
             new AlertDialog.Builder(this)
-                    .setTitle("No INTERNET CONNECTION")
-                    .setMessage("WALEO WHAT ERA LIEO NO INTERNET???")
+                    .setTitle("No Connection")
+                    .setMessage("Please turn on internet")
                     .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
                             startActivityForResult(new Intent(android.provider.Settings.ACTION_DATA_ROAMING_SETTINGS), 0);
@@ -187,7 +172,6 @@ public class AppointmentChecker extends AppCompatActivity {
     @Override
     protected void onStop() {
         Log.d(TAG, "onStop Called");
-        mGoogleApiClient.disconnect();
         super.onStop();
 
         // Remove Firebase Database Listener
@@ -202,79 +186,6 @@ public class AppointmentChecker extends AppCompatActivity {
     protected void onResume() {
         Log.d(TAG, "onResume Called");
         super.onResume();
-
-        // Check Google Play Services Availability
-        int response = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this);
-        if (response != ConnectionResult.SUCCESS) {
-            Log.d(TAG, "Google Play Services not available - show dialog to ask user to download it");
-            GoogleApiAvailability.getInstance().getErrorDialog(this, response, 1).show();
-        } else {
-            Log.d(TAG, "Google Play Services is available - no action is required");
-        }
-    }
-
-    // Location Monitoring Method
-    private void startLocationMonitoring() {
-        Log.d(TAG, "startLocationMonitoring Called");
-        try {
-            LocationRequest locationRequest = LocationRequest.create()
-                    .setInterval(100000)
-                    .setFastestInterval(5000)
-                    .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, locationRequest, new LocationListener() {
-                @Override
-                public void onLocationChanged(Location location) {
-                    Log.d(TAG, "Location update lat/long " + location.getLatitude() + " " + location.getLongitude());
-                }
-            });
-
-            startGeofenceMonitoring();
-
-        } catch (SecurityException e) {
-            Log.d(TAG, "SecurityException - " + e.getMessage());
-        }
-    }
-
-    // Start Geofencing Method, Create Geofence Area
-    private void startGeofenceMonitoring() {
-        Log.d(TAG, "startGeofenceMonitoring Called");
-        try {
-            Geofence mGeofence = new Geofence.Builder()
-                    .setRequestId(GEOFENCE_ID)
-                    .setCircularRegion(1.3787785, 103.8485165, 200)
-                    .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                    .setNotificationResponsiveness(1000)
-                    .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
-                    .build();
-
-            GeofencingRequest mGeofenceRequest = new GeofencingRequest.Builder()
-                    .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
-                    .addGeofence(mGeofence).build();
-
-            // Call Geofence Service Class
-            Intent intent = new Intent(this, GeofenceService.class);
-            PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-            // Check Google API
-            if (!mGoogleApiClient.isConnected()) {
-                Log.d(TAG, "GoogleApiClient is not connected");
-            } else {
-                LocationServices.GeofencingApi.addGeofences(mGoogleApiClient, mGeofenceRequest, pendingIntent)
-                        .setResultCallback(new ResultCallback<Status>() {
-
-                            @Override
-                            public void onResult(Status status) {
-                                if (status.isSuccess()) {
-                                    Log.d(TAG, "Successfully added geofence");
-                                } else {
-                                    Log.d(TAG, "Failed to add geofence + " + status.getStatus());
-                                }
-                            }
-                        });
-            }
-        } catch (SecurityException e) {
-            Log.d(TAG, "SecurityException - " + e.getMessage());
-        }
     }
 
     // Check-In Method
@@ -341,26 +252,6 @@ public class AppointmentChecker extends AppCompatActivity {
 //////////////////////////////////////////////////////////////////////
 //@@@                       RECYCLER VIEW ~!                     @@@//
 //////////////////////////////////////////////////////////////////////
-
-    public void googMap(View view) {
-        double destinationLatitude = 1.379268;
-        double destinationLongitude = 103.849878;
-        String uri = String.format(Locale.ENGLISH, "http://maps.google.com/maps?daddr=%f,%f (%s)", destinationLatitude, destinationLongitude, "Block L - School of Information Technology");
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
-        intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
-        try {
-            startActivity(intent);
-        } catch (ActivityNotFoundException ex) {
-            Toast.makeText(this, "Please install a maps application", Toast.LENGTH_LONG).show();
-            try {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.maps" +
-                        "" +
-                        "&hl=en")));
-            } catch (android.content.ActivityNotFoundException anfe) {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.apps.maps&hl=en")));
-            }
-        }
-    }
 
     private static class AppointmentViewHolder extends RecyclerView.ViewHolder {
 
@@ -528,6 +419,26 @@ public class AppointmentChecker extends AppCompatActivity {
         public void cleanupListener() {
             if (mChildEventListener != null) {
                 mDatabaseReference.removeEventListener(mChildEventListener);
+            }
+        }
+    }
+
+    public void googMap(View view) {
+        double destinationLatitude = 1.379268;
+        double destinationLongitude = 103.849878;
+        String uri = String.format(Locale.ENGLISH, "http://maps.google.com/maps?daddr=%f,%f (%s)", destinationLatitude, destinationLongitude, "Block L - School of Information Technology");
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
+        intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException ex) {
+            Toast.makeText(this, "Please install a maps application", Toast.LENGTH_LONG).show();
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.maps" +
+                        "" +
+                        "&hl=en")));
+            } catch (android.content.ActivityNotFoundException anfe) {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.apps.maps&hl=en")));
             }
         }
     }

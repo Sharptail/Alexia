@@ -3,6 +3,7 @@ package sg.edu.nyp.alexia.checkin;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -29,21 +30,23 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import sg.edu.nyp.alexia.R;
+import sg.edu.nyp.alexia.receivers.SmsReceiver;
 
 public class NRICVerification extends AppCompatActivity {
 
-    public static final String PREFS_NRIC = "MyNricFile";
+    public static final String SMS_RECEIVED_ACTION = "android.provider.Telephony.SMS_RECEIVED";
     private static final String TAG = "NRICVerification";
     public static String OTP;
     public static String smsPhone;
     public static String NRIC;
+    static ProgressDialog progress;
+    SmsReceiver smsReceiver;
     private EditText mTo;
     private Button mSend;
     private OkHttpClient mClient = new OkHttpClient();
     private Context mContext;
     private DatabaseReference rootRef;
-    static ProgressDialog progress;
-
+    IntentFilter filter;
 
     public static String getNRIC() {
         return NRIC;
@@ -73,6 +76,8 @@ public class NRICVerification extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.nric_verify);
+
+        filter = new IntentFilter(SMS_RECEIVED_ACTION);
 
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 

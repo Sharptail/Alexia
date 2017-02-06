@@ -53,10 +53,17 @@ public class GeofenceService extends IntentService {
                 Log.d(TAG, "Entering geofence - " + requestId);
                 setInGeoGeoFence(true);
                 Log.d(TAG, "Tell me " + String.valueOf(inGeoGeoFence));
+                Intent inbroadcast = new Intent();
+                inbroadcast.setAction("sg.edu.nyp.alexia.enter");
+                sendBroadcast(inbroadcast);
+
             } else if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) {
                 Log.d(TAG, "Exiting geofence - " + requestId);
                 setInGeoGeoFence(false);
                 Log.d(TAG, "Tell me " + String.valueOf(inGeoGeoFence));
+                Intent exitbroadcast = new Intent();
+                exitbroadcast.setAction("sg.edu.nyp.alexia.exit");
+                sendBroadcast(exitbroadcast);
             }
         }
     }

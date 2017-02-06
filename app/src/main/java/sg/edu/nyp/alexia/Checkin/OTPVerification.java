@@ -17,10 +17,11 @@ import android.widget.Toast;
 
 import sg.edu.nyp.alexia.R;
 import sg.edu.nyp.alexia.receivers.SmsReceiver;
+import sg.edu.nyp.alexia.model.MyNriceFile;
 
 public class OTPVerification extends AppCompatActivity {
 
-    public static final String PREFS_NRIC = "MyNricFile";
+    MyNriceFile MyNricFile = new MyNriceFile();
     NRICVerification nricVerification = new NRICVerification();
     private static final String TAG = "OTPVerification";
     String output;
@@ -105,6 +106,7 @@ public class OTPVerification extends AppCompatActivity {
             }
         }
 
+        // Register SMS Receiver
         mSMSreceiver = new SmsReceiver();
         mIntentFilter = new IntentFilter();
         mIntentFilter.addAction("android.provider.Telephony.SMS_RECEIVED");
@@ -133,10 +135,8 @@ public class OTPVerification extends AppCompatActivity {
         Log.e(TAG, "Keyed in " + output);
         Log.e(TAG, output + " = " + nricVerification.getOTP());
         if (output.equals(nricVerification.getOTP())) {
-            // Store to shared preferences
-            SharedPreferences.Editor editor = getSharedPreferences(PREFS_NRIC, 0).edit();
-            editor.putString("Nric", nricVerification.getNRIC() );
-            editor.commit();
+
+            MyNricFile.setNric(nricVerification.getNRIC(), OTPVerification.this);
 
             Intent intent = new Intent(OTPVerification.this, AppointmentChecker.class);
             startActivity(intent);
