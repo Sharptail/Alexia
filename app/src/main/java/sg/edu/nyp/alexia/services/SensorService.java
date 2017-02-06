@@ -58,7 +58,7 @@ public class SensorService extends Service {
         calendar.set(Calendar.MINUTE, 37);
         calendar.set(Calendar.SECOND, 30);
 
-        am.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), 1000 * 60, sender);
+        am.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), 1000 * 60 * 15, sender);
         Log.e("ALARM MANAGER", "ALARM STARTED");
     }
 
