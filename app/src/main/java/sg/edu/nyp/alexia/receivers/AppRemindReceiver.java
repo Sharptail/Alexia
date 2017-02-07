@@ -1,12 +1,9 @@
 package sg.edu.nyp.alexia.receivers;
 
 import android.app.ActivityManager;
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Handler;
 import android.util.Log;
 
@@ -22,14 +19,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-import sg.edu.nyp.alexia.R;
 import sg.edu.nyp.alexia.model.Appointments;
-import sg.edu.nyp.alexia.services.BackgroundGeoService;
 import sg.edu.nyp.alexia.services.GeoCheckinService;
 import sg.edu.nyp.alexia.model.MyNriceFile;
-import sg.edu.nyp.alexia.services.SensorService;
 
-import static android.content.Context.NOTIFICATION_SERVICE;
 /**
  * Created by Spencer on 3/2/2017.
  */
@@ -45,9 +38,9 @@ public class AppRemindReceiver extends BroadcastReceiver {
     public static String nricLog;
     MyNriceFile MyNricFile = new MyNriceFile();
 
-    // For BackgroundGeoService
+    // For GeoCheckinService
     Intent mServiceIntent;
-    private BackgroundGeoService mBackgroundGeoService;
+    private GeoCheckinService mGeoCheckinService;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -115,9 +108,9 @@ public class AppRemindReceiver extends BroadcastReceiver {
 //                notificationManager.notify(i, noti);
 
                 // Initialize SensorService
-                mBackgroundGeoService = new BackgroundGeoService(ctx);
-                mServiceIntent = new Intent(ctx, mBackgroundGeoService.getClass());
-                if (!isMyServiceRunning(mBackgroundGeoService.getClass(), ctx)) {
+                mGeoCheckinService = new GeoCheckinService(ctx);
+                mServiceIntent = new Intent(ctx, mGeoCheckinService.getClass());
+                if (!isMyServiceRunning(mGeoCheckinService.getClass(), ctx)) {
                     ctx.startService(mServiceIntent);
                 }
             }
@@ -125,7 +118,7 @@ public class AppRemindReceiver extends BroadcastReceiver {
         patientAppointDB.removeEventListener(vAppointListener);
     }
 
-    //Check if mBackgroundGeoService is running
+    //Check if mGeoCheckinService is running
     private boolean isMyServiceRunning(Class<?> serviceClass, Context ctx) {
         ActivityManager manager = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {

@@ -66,9 +66,7 @@
         <service
             android:name=".services.GeoCheckinService"
             android:enabled="true" />
-        <service
-            android:name=".services.BackgroundGeoService"
-            android:enabled="true" />
+
         <receiver
             android:name=".receivers.SensorRestarterBroadcastReceiver"
             android:enabled="true"

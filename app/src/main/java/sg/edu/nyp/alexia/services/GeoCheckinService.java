@@ -1,13 +1,18 @@
 package sg.edu.nyp.alexia.services;
 
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -19,6 +24,8 @@ import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+
+import sg.edu.nyp.alexia.R;
 
 
 /**
@@ -43,6 +50,11 @@ public class GeoCheckinService extends Service {
     @Override
     public void onCreate(){
         super.onCreate();
+        BackGeoReceiver mBackGeoReceiver = new BackGeoReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("sg.edu.nyp.alexia.enter");
+        filter.addAction("sg.edu.nyp.alexia.exit");
+        this.registerReceiver(mBackGeoReceiver, filter);
     }
 
     @Override
@@ -149,6 +161,37 @@ public class GeoCheckinService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    class BackGeoReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context ctx, Intent intent) {
+            if (TextUtils.equals(intent.getAction(), "sg.edu.nyp.alexia.enter")) {
+                Log.e("BackGeoReceiver", "WOoo Hoo Backgorund enter Geofence");
+
+                NotificationManager notificationManager = (NotificationManager) ctx.getSystemService(NOTIFICATION_SERVICE);
+
+                Notification noti = new Notification.Builder(ctx)
+                        .setContentTitle("Medical Appointment at Alexandra Health")
+                        .setContentText("Entering Geofence Area LE")
+                        .setSmallIcon(R.drawable.notification_icon)
+                        .build();
+
+                notificationManager.notify(4321, noti);
+            } else if (TextUtils.equals(intent.getAction(), "sg.edu.nyp.alexia.exit")) {
+                Log.e("BackGeoReceiver", "Sob sob Backgorund exit Geofence");
+                NotificationManager notificationManager = (NotificationManager) ctx.getSystemService(NOTIFICATION_SERVICE);
+
+                Notification noti = new Notification.Builder(ctx)
+                        .setContentTitle("Medical Appointment at Alexandra Health")
+                        .setContentText("Exiting Geofence Area LE")
+                        .setSmallIcon(R.drawable.notification_icon)
+                        .build();
+
+                notificationManager.notify(4312, noti);
+            }
+        }
     }
 }
 
