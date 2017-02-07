@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
@@ -173,13 +174,19 @@ public class MainActivity extends Activity {
 
     public void goToCheckIn(View view) {
 
-        // Check for stored NRIC under shared preferences
-        if (nricLog != null) {
-            Intent intent = new Intent(MainActivity.this, AppointmentChecker.class);
-            startActivity(intent);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == -1){
+            requestPermissions(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION
+            }, 1234);
         } else {
-            Intent intent = new Intent(MainActivity.this, NRICVerification.class);
-            startActivity(intent);
+            // Check for stored NRIC under shared preferences
+            if (nricLog != null) {
+                Intent intent = new Intent(MainActivity.this, AppointmentChecker.class);
+                startActivity(intent);
+            } else {
+                Intent intent = new Intent(MainActivity.this, NRICVerification.class);
+                startActivity(intent);
+            }
         }
     }
 }

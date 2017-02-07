@@ -40,7 +40,7 @@ public class SmsReceiver extends BroadcastReceiver {
                 Log.e(TAG, senderNum);
                 try {
                     if (senderNum.equals("+61448541925")) {
-                        String code = null;
+                        String code;
                         int index = message.indexOf(":");
                         if (index != -1) {
                             int start = index + 2;

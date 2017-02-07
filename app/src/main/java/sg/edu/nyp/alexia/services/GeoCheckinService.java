@@ -12,6 +12,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v7.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -25,7 +26,13 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import java.lang.reflect.Array;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+
 import sg.edu.nyp.alexia.R;
+import sg.edu.nyp.alexia.model.Appointments;
 
 
 /**
@@ -38,6 +45,7 @@ public class GeoCheckinService extends Service {
 
     //Google / Geofence Service
     GoogleApiClient mGoogleApiClient;
+    ArrayList<Appointments> mAppointments;
 
     public GeoCheckinService(final Context applicationContext) {
         Log.i("GeoCheckinService", "Initialized");
@@ -50,6 +58,7 @@ public class GeoCheckinService extends Service {
     @Override
     public void onCreate(){
         super.onCreate();
+
         BackGeoReceiver mBackGeoReceiver = new BackGeoReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction("sg.edu.nyp.alexia.enter");
@@ -60,6 +69,11 @@ public class GeoCheckinService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
+
+        Bundle bundle = intent.getExtras();
+        mAppointments = (ArrayList<Appointments>) bundle.getSerializable("Appointment_List");
+        Log.e("Testing Serializable", mAppointments.get(1).getRoom());
+
         // Create an instance of GoogleAPIClient.
         if (mGoogleApiClient == null) {
             mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -121,7 +135,7 @@ public class GeoCheckinService extends Service {
         try {
             Geofence mGeofence = new Geofence.Builder()
                     .setRequestId(GEOFENCE_ID)
-                    .setCircularRegion(1.3787785, 103.8485165, 50)
+                    .setCircularRegion(1.3787785, 103.8485165, 200)
                     .setExpirationDuration(Geofence.NEVER_EXPIRE)
                     .setNotificationResponsiveness(1000)
                     .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
@@ -167,18 +181,50 @@ public class GeoCheckinService extends Service {
 
         @Override
         public void onReceive(Context ctx, Intent intent) {
+
+            Calendar c = Calendar.getInstance();
+            SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+            final String formattedDate = df.format(c.getTime());
+
+            Log.e("Testing Serializable", mAppointments.get(1).getRoom());
+
             if (TextUtils.equals(intent.getAction(), "sg.edu.nyp.alexia.enter")) {
                 Log.e("BackGeoReceiver", "WOoo Hoo Backgorund enter Geofence");
 
-                NotificationManager notificationManager = (NotificationManager) ctx.getSystemService(NOTIFICATION_SERVICE);
+                for (int i = 0; i < mAppointments.size(); i++) {
+                    Log.e("OnDataChange", String.valueOf(mAppointments.get(i).getDate()));
+                    if (mAppointments.get(i).getDate().equals(formattedDate) && mAppointments.get(i).getCheckin().equals("No")) {
+                        Log.e("INSIDE DATASNAP", formattedDate);
 
-                Notification noti = new Notification.Builder(ctx)
-                        .setContentTitle("Medical Appointment at Alexandra Health")
-                        .setContentText("Entering Geofence Area LE")
-                        .setSmallIcon(R.drawable.notification_icon)
-                        .build();
+                        NotificationManager notificationManager = (NotificationManager) ctx.getSystemService(NOTIFICATION_SERVICE);
 
-                notificationManager.notify(4321, noti);
+                        Intent resultIntent = new Intent("sg.edu.nyp.alexia.GoogleMap");
+                        PendingIntent resultPendingIntent = PendingIntent.getBroadcast(ctx,(int) System.currentTimeMillis(),resultIntent,0);
+
+                        NotificationCompat.Builder noti = new NotificationCompat.Builder(ctx);
+                        noti.setContentTitle(String.valueOf(mAppointments.get(i).getType()) + " Appointment");
+                        noti.setContentText("Time: " + String.valueOf(mAppointments.get(i).getTime()));
+                        noti.setSmallIcon(R.drawable.notification_icon);
+                        noti.addAction(new NotificationCompat.Action(0,"Get Direction", resultPendingIntent));
+                        noti.addAction(new NotificationCompat.Action(0,"Geo Checkin", resultPendingIntent));
+                        noti.setPriority(NotificationCompat.PRIORITY_MAX);
+                        noti.setWhen(0);
+                        noti.setOngoing(true);
+                        noti.setOnlyAlertOnce(true);
+                        noti.setAutoCancel(false);
+                        notificationManager.notify(i + 1000, noti.build());
+                    }
+                }
+
+//                NotificationManager notificationManager = (NotificationManager) ctx.getSystemService(NOTIFICATION_SERVICE);
+//
+//                Notification noti = new Notification.Builder(ctx)
+//                        .setContentTitle("Medical Appointment at Alexandra Health")
+//                        .setContentText("Entering Geofence Area LE")
+//                        .setSmallIcon(R.drawable.notification_icon)
+//                        .build();
+//
+//                notificationManager.notify(4321, noti);
             } else if (TextUtils.equals(intent.getAction(), "sg.edu.nyp.alexia.exit")) {
                 Log.e("BackGeoReceiver", "Sob sob Backgorund exit Geofence");
                 NotificationManager notificationManager = (NotificationManager) ctx.getSystemService(NOTIFICATION_SERVICE);

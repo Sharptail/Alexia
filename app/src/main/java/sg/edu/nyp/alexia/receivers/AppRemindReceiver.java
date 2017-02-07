@@ -1,10 +1,16 @@
 package sg.edu.nyp.alexia.receivers;
 
 import android.app.ActivityManager;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
+import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.firebase.database.ChildEventListener;
@@ -14,22 +20,26 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import sg.edu.nyp.alexia.R;
 import sg.edu.nyp.alexia.model.Appointments;
 import sg.edu.nyp.alexia.services.GeoCheckinService;
 import sg.edu.nyp.alexia.model.MyNriceFile;
+
+import static android.content.Context.NOTIFICATION_SERVICE;
 
 /**
  * Created by Spencer on 3/2/2017.
  */
 
-public class AppRemindReceiver extends BroadcastReceiver {
+public class AppRemindReceiver extends BroadcastReceiver implements Serializable{
 
-    public List<Appointments> mAppointments = new ArrayList<>();
+    public List<Appointments> mAppointments = new ArrayList<Appointments>();
     private DatabaseReference patientAppointDB;
     private ValueEventListener vAppointListener;
     private DatabaseReference mDatabaseReference;
@@ -91,28 +101,44 @@ public class AppRemindReceiver extends BroadcastReceiver {
 
     }
 
+    private Boolean postNotification;
+
     public void postNote(String formattedDate, Context ctx) {
 
         for (int i = 0; i < mAppointments.size(); i++) {
             Log.e("OnDataChange", String.valueOf(mAppointments.get(i).getDate()));
             if (mAppointments.get(i).getDate().equals(formattedDate) && mAppointments.get(i).getCheckin().equals("No")) {
                 Log.e("INSIDE DATASNAP", formattedDate);
-//                NotificationManager notificationManager = (NotificationManager) ctx.getSystemService(NOTIFICATION_SERVICE);
-//
-//                Notification noti = new Notification.Builder(ctx)
-//                        .setContentTitle("Medical Appointment at Alexandra Health")
-//                        .setContentText("Appointment Time: " + String.valueOf(mAppointments.get(i).getTime()))
-//                        .setSmallIcon(R.drawable.notification_icon)
-//                        .build();
-//
-//                notificationManager.notify(i, noti);
 
-                // Initialize SensorService
-                mGeoCheckinService = new GeoCheckinService(ctx);
-                mServiceIntent = new Intent(ctx, mGeoCheckinService.getClass());
-                if (!isMyServiceRunning(mGeoCheckinService.getClass(), ctx)) {
-                    ctx.startService(mServiceIntent);
-                }
+                NotificationManager notificationManager = (NotificationManager) ctx.getSystemService(NOTIFICATION_SERVICE);
+
+                Intent resultIntent = new Intent("sg.edu.nyp.alexia.GoogleMap");
+                PendingIntent resultPendingIntent = PendingIntent.getBroadcast(ctx,(int) System.currentTimeMillis(),resultIntent,0);
+
+                NotificationCompat.Builder noti = new NotificationCompat.Builder(ctx);
+                noti.setContentTitle(String.valueOf(mAppointments.get(i).getType()) + " Appointment");
+                noti.setContentText("Time: " + String.valueOf(mAppointments.get(i).getTime()));
+                noti.setSmallIcon(R.drawable.notification_icon);
+                noti.addAction(new NotificationCompat.Action(0,"Get Direction", resultPendingIntent));
+                noti.setPriority(NotificationCompat.PRIORITY_MAX);
+                noti.setWhen(0);
+                noti.setOngoing(true);
+                noti.setOnlyAlertOnce(true);
+                noti.setAutoCancel(false);
+                notificationManager.notify(i + 1000, noti.build());
+
+                postNotification = true;
+            }
+        }
+        if (postNotification) {
+            // Initialize GeoCheckinService
+            Bundle bundle = new Bundle();
+            bundle.putSerializable("Appointment_List", (Serializable) mAppointments);
+            mGeoCheckinService = new GeoCheckinService(ctx);
+            mServiceIntent = new Intent(ctx, mGeoCheckinService.getClass());
+            mServiceIntent.putExtras(bundle);
+            if (!isMyServiceRunning(mGeoCheckinService.getClass(), ctx)) {
+                ctx.startService(mServiceIntent);
             }
         }
         patientAppointDB.removeEventListener(vAppointListener);

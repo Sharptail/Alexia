@@ -11,6 +11,8 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
@@ -30,6 +32,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -43,7 +46,7 @@ import sg.edu.nyp.alexia.RoutingActivity;
 import sg.edu.nyp.alexia.services.GeoCheckinService;
 import sg.edu.nyp.alexia.services.GeofenceService;
 
-public class AppointmentChecker extends AppCompatActivity {
+public class AppointmentChecker extends AppCompatActivity implements Serializable{
 
     private static final String TAG = "AppointmentChecker";
     static ProgressDialog progress;
@@ -80,14 +83,22 @@ public class AppointmentChecker extends AppCompatActivity {
 
         progress = ProgressDialog.show(this, "Loading", "Please Wait A Moment", true);
 
-        // Initialize GeoCheckinService
-        mGeocheckinService = new GeoCheckinService(AppointmentChecker.this);
-        mServiceIntent = new Intent(AppointmentChecker.this, mGeocheckinService.getClass());
-        if (nricLog != null) {
-            if (!isMyServiceRunning(mGeocheckinService.getClass())) {
-                startService(mServiceIntent);
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            public void run() {
+                // Initialize GeoCheckinService
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("Appointment_List", (Serializable) mAppointments);
+                mGeocheckinService = new GeoCheckinService(AppointmentChecker.this);
+                mServiceIntent = new Intent(AppointmentChecker.this, mGeocheckinService.getClass());
+                mServiceIntent.putExtras(bundle);
+                if (nricLog != null) {
+                    if (!isMyServiceRunning(mGeocheckinService.getClass())) {
+                        startService(mServiceIntent);
+                    }
+                }
             }
-        }
+        }, 5000);
     }
 
     //Check if SensorService is running
