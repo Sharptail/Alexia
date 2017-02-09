@@ -19,7 +19,7 @@ import com.mapbox.mapboxsdk.MapboxAccountManager;
 import java.io.File;
 
 public class MainActivity extends Activity {
-    private String mapDownloadURL = "https://firebasestorage.googleapis.com/v0/b/mocktest-efa0d.appspot.com/o/singapore7-gh.zip?alt=media&token=752a6e87-1d69-4f23-9701-43e78f872a4b";
+    private String mapDownloadURL = "https://firebasestorage.googleapis.com/v0/b/mocktest-efa0d.appspot.com/o/singapore.zip?alt=media&token=1dcc196d-954f-4e8a-93c5-2101af28fcd8";
     private String targetFilePath = "/sdcard/Download/graphhopper/maps/";
     public static final String PREFS_NRIC = "MyNricFile";
 

@@ -6,6 +6,7 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Path;
@@ -15,7 +16,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.design.widget.FloatingActionButton;
+import android.os.Handler;
 import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -25,19 +26,21 @@ import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
-import android.os.Handler;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.googlecode.tesseract.android.TessBaseAPI;
 import com.graphhopper.GHRequest;
 import com.graphhopper.GHResponse;
 import com.graphhopper.GraphHopper;
@@ -56,27 +59,38 @@ import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.geometry.LatLngBounds;
+import com.mapbox.mapboxsdk.geometry.VisibleRegion;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import sg.edu.nyp.alexia.Class.ATM;
+import sg.edu.nyp.alexia.Class.Elevator;
 import sg.edu.nyp.alexia.Class.Nearby;
 import sg.edu.nyp.alexia.Class.NearbyAdapter;
 import sg.edu.nyp.alexia.Class.Room;
 import sg.edu.nyp.alexia.Class.RoomAdapter;
 
+
 public class RoutingActivity extends Activity {
+    final int QR_CODE_SCANNER_CODE = 1;
+    final int OCR_CAMERA_CODE = 2;
     private AppDrawer appDrawer;
+    private ProgressDialog progressDialog;
     private LinearLayout drawerLayout;
     private ViewGroup.LayoutParams drawerParams;
     private RelativeLayout routingLayout;
     private Button expandButton;
-    private FloatingActionButton nextButton;
     private MapView mapView;
     private GraphHopper hopper;
     private LatLng start;
@@ -90,6 +104,7 @@ public class RoutingActivity extends Activity {
     private Integer selectedLocationIndex = 0;
     private ArrayList<Room> roomList = new ArrayList<>();
     private ArrayList<ATM> atmList = new ArrayList<>();
+    private ArrayList<Elevator> elevatorList = new ArrayList<>();
     private List<LatLng> calculatedPoints = new ArrayList<>();
     private List<Polyline> calculatedPolylines = new ArrayList<>();
     private Double calculatedDistance;
@@ -104,6 +119,17 @@ public class RoutingActivity extends Activity {
     private ListView nearbyListView;
     private SearchView nearbySearchView;
     private boolean isEndFirst = false;
+    private LatLng NE_LIMIT = new LatLng(1.3797034, 103.850184);
+    private LatLng SW_LIMIT = new LatLng(1.378903, 103.8493619);
+    private String preferredElevator = "stairs";
+    private LatLng preferredElevatorPoint;
+    private TextView currentLevelTV;
+    private ImageButton ocrButton;
+    private TessBaseAPI mTess;
+    private String ocrDatapath = "";
+    private CameraPosition newCameraPos;
+    private Button startButton;
+    private Button nextButton;
 
     @Override
     protected void onStart() {
@@ -111,7 +137,7 @@ public class RoutingActivity extends Activity {
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)  {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_routing);
@@ -120,6 +146,7 @@ public class RoutingActivity extends Activity {
         drawerLayout = (LinearLayout) findViewById(R.id.bottom_drawer);
         routingLayout = (RelativeLayout) findViewById(R.id.routing_layout);
         expandButton = (Button) findViewById(R.id.expandButton);
+        currentLevelTV = (TextView) findViewById(R.id.current_level_text);
 
         roomListView=(ListView) findViewById(R.id.room_list_view);
         roomSearchView=(SearchView) findViewById(R.id.room_search_view);
@@ -128,17 +155,29 @@ public class RoutingActivity extends Activity {
 
         roomListView = (ListView) findViewById(R.id.room_list_view);
         roomSearchView = (SearchView) findViewById(R.id.room_search_view);
-
+        ocrButton = (ImageButton) findViewById(R.id.ocr_button);
+        startButton = (Button) findViewById(R.id.start_button);
+        nextButton = (Button) findViewById(R.id.next_button);
 
         drawerParams = drawerLayout.getLayoutParams();
+
+        //initialize Tesseract API
+        String language = "eng";
+        ocrDatapath = getFilesDir()+ "/tesseract/";
+        mTess = new TessBaseAPI();
+        ocrCheckFile(new File(ocrDatapath + "tessdata/"));
+        mTess.init(ocrDatapath, language);
+        mTess.setVariable("tessedit_char_whitelist", "0123456789");
 
         roomSearchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View view, boolean b) {
                 if (b == true) {
                     expandDrawer();
+                    ocrButton.setVisibility(View.VISIBLE);
                 } else {
                     collapseDrawer();
+                    ocrButton.setVisibility(View.GONE);
                 }
             }
         });
@@ -161,6 +200,7 @@ public class RoutingActivity extends Activity {
         myRef.child("fyproom").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
+                roomList.clear();
                 for (DataSnapshot roomSnapshot : dataSnapshot.getChildren()) {
                     Room room = roomSnapshot.getValue(Room.class);
                     roomList.add(room);
@@ -212,6 +252,20 @@ public class RoutingActivity extends Activity {
             }
         });
 
+        myRef.child("elevator").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot roomSnapshot : dataSnapshot.getChildren()) {
+                    Elevator elevator = roomSnapshot.getValue(Elevator.class);
+                    elevatorList.add(elevator);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+            }
+        });
+
         // Jian Wei - set graphhopper maps' folder
         boolean greaterOrEqKitkat = Build.VERSION.SDK_INT >= 19;
         if (greaterOrEqKitkat) {
@@ -240,6 +294,7 @@ public class RoutingActivity extends Activity {
                         .target(zoomLocation)
                         .zoom(19) // Sets the zoom
                         .build(); // Creates a CameraPosition from the builder
+                mapboxMap.setMinZoom(19);
                 mapboxMap.animateCamera(CameraUpdateFactory
                         .newCameraPosition(position), 2000);
                 mapboxMap.setOnMapLongClickListener(new MapboxMap.OnMapLongClickListener() {
@@ -276,6 +331,20 @@ public class RoutingActivity extends Activity {
                     }
                 });
 
+                mapboxMap.setOnScrollListener(new MapboxMap.OnScrollListener() {
+                    @Override
+                    public void onScroll() {
+                        restrictMapToBoundingBox();
+                    }
+                });
+
+                mapboxMap.setOnFlingListener(new MapboxMap.OnFlingListener() {
+                    @Override
+                    public void onFling() {
+                        restrictMapToBoundingBox();
+                    }
+                });
+
                 roomListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -295,11 +364,7 @@ public class RoutingActivity extends Activity {
                             calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
                                     end.getLongitude(),mapboxMap);
                         }else{
-                            end = stairsPoint;
-
-                            // Calculate Shortest Path
-                            calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
-                                    end.getLongitude(),mapboxMap);
+                            appDrawer.switchDrawer(4);
                         }
                     }
                 });
@@ -356,6 +421,52 @@ public class RoutingActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         mapView.onDestroy();
+    }
+
+    public void easeCameraBackToBoundingBox(){
+
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+                LatLngBounds latLngBounds = new LatLngBounds.Builder()
+                        .include(NE_LIMIT) // Northeast
+                        .include(SW_LIMIT) // Southwest
+                        .build();
+
+                mapboxMap.easeCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 0), 100);
+            }
+        });
+    }
+
+    public void restrictMapToBoundingBox() {
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+                VisibleRegion visibleRegion = mapboxMap.getProjection().getVisibleRegion();
+
+                Double maxLat = NE_LIMIT.getLatitude();
+                Double maxLng = NE_LIMIT.getLongitude();
+                Double minLat = SW_LIMIT.getLatitude();
+                Double minLng = SW_LIMIT.getLongitude();
+
+                if( !(visibleRegion.farLeft.getLatitude() >= minLat && visibleRegion.farLeft.getLatitude() <= maxLat
+                        && visibleRegion.farLeft.getLongitude() >= minLng && visibleRegion.farLeft.getLongitude() <= maxLng) ) {
+                    easeCameraBackToBoundingBox();
+                }
+                if( !(visibleRegion.farRight.getLatitude() >= minLat && visibleRegion.farRight.getLatitude() <= maxLat
+                        && visibleRegion.farRight.getLongitude() >= minLng && visibleRegion.farRight.getLongitude() <= maxLng) ) {
+                    easeCameraBackToBoundingBox();
+                }
+                if( !(visibleRegion.nearLeft.getLatitude() >= minLat && visibleRegion.nearLeft.getLatitude() <= maxLat
+                        && visibleRegion.nearLeft.getLongitude() >= minLng && visibleRegion.nearLeft.getLongitude() <= maxLng) ) {
+                    easeCameraBackToBoundingBox();
+                }
+                if( !(visibleRegion.nearRight.getLatitude() >= minLat && visibleRegion.nearRight.getLatitude() <= maxLat
+                        && visibleRegion.nearRight.getLongitude() >= minLng && visibleRegion.nearRight.getLongitude() <= maxLng) ) {
+                    easeCameraBackToBoundingBox();
+                }
+            }
+        });
     }
 
     public void change(View view) {
@@ -464,7 +575,7 @@ public class RoutingActivity extends Activity {
     // Jian Wei - to laod the graph storage we created (Very Important)
     void loadGraphStorage() {
         // logUser("loading graph (" + Constants.VERSION + ") ... ");
-        logUser("Loading graph, please wait");
+//        logUser("Loading graph, please wait");
         new GHAsyncTask<Void, Void, Path>() {
             protected Path saveDoInBackground(Void... v) throws Exception {
                 GraphHopper tmpHopp = new GraphHopper().forMobile();
@@ -479,7 +590,7 @@ public class RoutingActivity extends Activity {
                     logUser("An error happened while creating graph:"
                             + getErrorMessage());
                 } else {
-                    logUser("Finished loading graph.");
+//                    logUser("Finished loading graph.");
                 }
 
                 finishPrepare();
@@ -496,18 +607,26 @@ public class RoutingActivity extends Activity {
             }, 1234);
         } else {
             Intent intent = new Intent(this, QRCodeScannerActivity.class);
-            startActivityForResult(intent, 1);
+            startActivityForResult(intent, QR_CODE_SCANNER_CODE);
         }
+    }
+
+    public void openOCRCamera(View view){
+        Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+        startActivityForResult(intent,OCR_CAMERA_CODE);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == 1) {
+        if (requestCode == QR_CODE_SCANNER_CODE) {
             if (resultCode == Activity.RESULT_OK) {
                 String result = data.getStringExtra("result");
                 String[] coords = result.split(",");
                 Double lat = Double.parseDouble(coords[0]);
                 Double lng = Double.parseDouble(coords[1]);
+                if(currentLevel != Integer.parseInt(coords[2]) ){
+                    switchLayers(Integer.parseInt(coords[2]));
+                }
                 final LatLng points = new LatLng(lat, lng);
                 start = points;
                 if(isEndFirst == false){
@@ -523,7 +642,7 @@ public class RoutingActivity extends Activity {
                         userCurrentPos = 0;
                         // Add the marker to the map
                         startMarker = mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "You Are Here!", ""));
-//                        startMarker.showInfoWindow(mapboxMap,mapView);
+                        //startMarker.showInfoWindow(mapboxMap,mapView);
 
                         //ZOOM TO LOCATION
                         LatLng zoomLocation = new LatLng(start.getLatitude(), start.getLongitude());
@@ -546,7 +665,11 @@ public class RoutingActivity extends Activity {
                         }
 
                         for (int i = 0; i < atmList.size(); i++) {
-                            getDistance(start.getLatitude(), start.getLongitude(), atmList.get(i).getLat(), atmList.get(i).getLng(), i);
+                            getDistance(start.getLatitude(), start.getLongitude(), atmList.get(i).getLat(), atmList.get(i).getLng(), i, "ATM");
+                        }
+
+                        for (int i = 0; i < elevatorList.size(); i++) {
+                            getDistance(start.getLatitude(), start.getLongitude(), atmList.get(i).getLat(), atmList.get(i).getLng(), i, "Elevator");
                         }
                     }
                 });
@@ -554,6 +677,12 @@ public class RoutingActivity extends Activity {
             if (resultCode == Activity.RESULT_CANCELED) {
                 //Write your code if there's no result
             }
+        }
+        else if(requestCode == OCR_CAMERA_CODE){
+            Bitmap image = (Bitmap) data.getExtras().get("data");
+            mTess.setImage(image);
+            //convert to int only
+            roomSearchView.setQuery(mTess.getUTF8Text(),true);
         }
     }
 
@@ -671,6 +800,77 @@ public class RoutingActivity extends Activity {
         });
     }
 
+    public void openLayers(View view){
+        ArrayList<String> layerList = new ArrayList<>();
+        if(currentLevel == 3){
+            layerList.add("Level 3 (Current Level)");
+        }else{
+            layerList.add("Level 3");
+        }
+
+        if(currentLevel == 4){
+            layerList.add("Level 4 (Current Level)");
+        }else{
+            layerList.add("Level 4");
+        }
+
+
+        ArrayAdapter<String> adp = new ArrayAdapter<String>(RoutingActivity.this,
+                android.R.layout.simple_list_item_1, layerList);
+
+        ListView layersLV = new ListView(this);
+        layersLV.setAdapter(adp);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(RoutingActivity.this);
+        builder.setView(layersLV);
+        builder.setTitle("Levels");
+        builder.setMessage("Please select a level that you want to view");
+
+        final AlertDialog show = builder.show();
+
+        layersLV.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                switch (i){
+                    case 0 :
+                        switchLayers(3);
+                        break;
+                    case 1 :
+                        switchLayers(4);
+                        break;
+                }
+                show.dismiss();
+            }
+        });
+    }
+
+    public void switchLayers(int level){
+        if(level == 3 && currentLevel != 3){
+            currentLevel = 3;
+            currentLevelTV.setText("Block L Level 3");
+            mapView.setStyleUrl(getString(R.string.mapbox_url));
+            currentArea = "singapore7";
+            loadGraphStorage();
+        }else if(level == 4 && currentLevel != 4){
+            currentLevel = 4;
+            currentLevelTV.setText("Block L Level 4");
+            mapView.setStyleUrl(getString(R.string.mapbox_url2));
+            currentArea = "singapore72";
+            loadGraphStorage();
+        }
+    }
+
+    public void startRouting(View view){
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+                nextButton.setVisibility(View.VISIBLE);
+                startButton.setVisibility(View.GONE);
+                mapboxMap.animateCamera(CameraUpdateFactory.newCameraPosition(newCameraPos), 2000);
+            }
+        });
+    }
+
     public void nextPos(View view) {
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
@@ -695,7 +895,7 @@ public class RoutingActivity extends Activity {
 
                     userCurrentPos++;
                 } else {
-                    if (end == stairsPoint) {
+                    if (end == stairsPoint || end == preferredElevatorPoint) {
                         // Change to current level
                         currentLevel = roomList.get(selectedLocationIndex).getLevel();
 
@@ -707,7 +907,11 @@ public class RoutingActivity extends Activity {
 
                         mapboxMap.clear();
                         userCurrentPos = 0;
-                        start = stairsPoint;
+                        if(preferredElevator == "stairs"){
+                            start = stairsPoint;
+                        }else if(preferredElevator == "elevator"){
+                            start = preferredElevatorPoint;
+                        }
                         // Add the marker to the map
                         startMarker = mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "You Are Here!", ""));
                         String[] coords = destination_coords.get(selectedLocationIndex).split(",");
@@ -865,6 +1069,45 @@ public class RoutingActivity extends Activity {
         });
     }
 
+    public void preferElevator(View view){
+        preferredElevator = "elevator";
+        double minDistance = elevatorList.get(0).getDistance();
+        int minIndex = 0;
+        for (int i = 1; i < elevatorList.size(); i++) {
+            if (elevatorList.get(i).getDistance() < minDistance) {
+                minDistance = elevatorList.get(i).getDistance();
+                minIndex = i;
+            }
+        }
+        LatLng point = new LatLng(elevatorList.get(minIndex).getLat(), elevatorList.get(minIndex).getLng());
+        preferredElevatorPoint = point;
+        end = point;
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+                appDrawer.switchDrawer(2);
+                // Calculate Shortest Path
+                calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
+                        end.getLongitude(),mapboxMap);
+            }
+        });
+    }
+
+    public void preferStairs(View view){
+        preferredElevator = "stairs";
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+                end = stairsPoint;
+                appDrawer.switchDrawer(2);
+
+                // Calculate Shortest Path
+                calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
+                        end.getLongitude(),mapboxMap);
+            }
+        });
+    }
+
     private void finishPrepare() {
         prepareInProgress = false;
     }
@@ -893,8 +1136,7 @@ public class RoutingActivity extends Activity {
                             + toLon + " found path with distance:" + resp.getDistance()
                             / 1000f + ", nodes:" + resp.getPoints().getSize() + ", time:"
                             + time + " " + resp.getDebugInfo());
-                    logUser("the route is " + (int) (resp.getDistance() / 100) / 10f
-                            + "km long, time:" + resp.getTime() / 60000f + "min, debug:" + time);
+//                    logUser("the route is " + (int) (resp.getDistance() / 100) / 10f+ "km long, time:" + resp.getTime() / 60000f + "min, debug:" + time);
 
                     List<LatLng> points = createPathLayer(resp);
                     List<Polyline> polylines = new ArrayList<Polyline>();
@@ -916,14 +1158,15 @@ public class RoutingActivity extends Activity {
 
                     //ZOOM TO LOCATION
                     LatLng zoomLocation = new LatLng(start.getLatitude(), start.getLongitude());
-                    CameraPosition position = new CameraPosition.Builder()
+                    newCameraPos = new CameraPosition.Builder()
                             .target(zoomLocation)
                             .zoom(22) // Sets the zoom
                             .tilt(60)
                             .bearing(bearing)
                             .build(); // Creates a CameraPosition from the builder
-                    mapboxMap.animateCamera(CameraUpdateFactory
-                            .newCameraPosition(position), 2000);
+                    resetMapView();
+                    startButton.setVisibility(View.VISIBLE);
+                    nextButton.setVisibility(View.GONE);
                     startMarker.hideInfoWindow();
                 } else {
                     logUser("Error:" + resp.getErrors());
@@ -934,7 +1177,7 @@ public class RoutingActivity extends Activity {
     }
 
     // Jian Wei - get Distance between 2 points
-    public void getDistance(final double fromLat, final double fromLon, final double toLat, final double toLon, final int index) {
+    public void getDistance(final double fromLat, final double fromLon, final double toLat, final double toLon, final int index, final String type) {
         new AsyncTask<Void, Void, PathWrapper>() {
             float time;
 
@@ -951,7 +1194,11 @@ public class RoutingActivity extends Activity {
 
             protected void onPostExecute(PathWrapper resp) {
                 if (!resp.hasErrors()) {
-                    setDistanceFromAsync(resp.getDistance(), index);
+                    if(type == "ATM"){
+                        setATMDistanceFromAsync(resp.getDistance(), index);
+                    }else if(type == "Elevator"){
+                        setElevatorDistanceFromAsync(resp.getDistance(), index);
+                    }
                 } else {
                     logUser("Error:" + resp.getErrors());
                 }
@@ -959,10 +1206,16 @@ public class RoutingActivity extends Activity {
         }.execute();
     }
 
-    // Jian Wei - get distance from async task
-    private void setDistanceFromAsync(Double distance, int index) {
+    // Jian Wei - get distance from async task for ATM
+    private void setATMDistanceFromAsync(Double distance,int index) {
         calculatedDistance = distance;
         atmList.get(index).setDistance(distance);
+    }
+
+    // Jian Wei - get distance from async task for Elevator
+    private void setElevatorDistanceFromAsync(Double distance,int index) {
+        calculatedDistance = distance;
+        elevatorList.get(index).setDistance(distance);
     }
 
     // Jian Wei - get the calculated points from asynctask
@@ -1012,6 +1265,50 @@ public class RoutingActivity extends Activity {
     private void logUser(String str) {
         log(str);
         Toast.makeText(this, str, Toast.LENGTH_SHORT).show();
+    }
+
+    private void ocrCheckFile(File dir) {
+        if (!dir.exists()&& dir.mkdirs()){
+            ocrCopyFiles();
+        }
+        if(dir.exists()) {
+            String datafilepath = ocrDatapath+ "/tessdata/eng.traineddata";
+            File datafile = new File(datafilepath);
+
+            if (!datafile.exists()) {
+                ocrCopyFiles();
+            }
+        }
+    }
+
+    private void ocrCopyFiles() {
+        try {
+            String filepath = ocrDatapath + "/tessdata/eng.traineddata";
+            AssetManager assetManager = getAssets();
+
+            InputStream instream = assetManager.open("tessdata/eng.traineddata");
+            OutputStream outstream = new FileOutputStream(filepath);
+
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = instream.read(buffer)) != -1) {
+                outstream.write(buffer, 0, read);
+            }
+
+
+            outstream.flush();
+            outstream.close();
+            instream.close();
+
+            File file = new File(filepath);
+            if (!file.exists()) {
+                throw new FileNotFoundException();
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void AppCheckRoute(String room) {

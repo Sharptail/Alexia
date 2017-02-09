@@ -40,6 +40,7 @@ class AppDrawer {
     private LinearLayout second_layout;
     private LinearLayout third_layout;
     private LinearLayout fourth_layout;
+    private LinearLayout fifth_layout;
 
     private enum S {OPEN_NOW, OPEN, CLOSE_NOW, CLOSE, CANCELED_NOW, CANCEL, TIME_OFF}     // States of animation
     private S animState = S.CLOSE;                                                        // Set state
@@ -66,6 +67,7 @@ class AppDrawer {
         second_layout = (LinearLayout) bottomDrawer.findViewById(R.id.second_layout);
         third_layout = (LinearLayout) bottomDrawer.findViewById(R.id.third_layout);
         fourth_layout = (LinearLayout) bottomDrawer.findViewById(R.id.fourth_layout);
+        fifth_layout = (LinearLayout) bottomDrawer.findViewById(R.id.fifth_layout);
 
         // Handler for timing for automatically closing the drawer
         handlCountDown = new Handler();
@@ -222,6 +224,7 @@ class AppDrawer {
                 second_layout.setVisibility(View.GONE);
                 third_layout.setVisibility(View.VISIBLE);
                 fourth_layout.setVisibility(View.GONE);
+                fifth_layout.setVisibility(View.GONE);
                 break;
             case 2: // Drawer 2
                 color = R.color.color_2;
@@ -229,6 +232,7 @@ class AppDrawer {
                 second_layout.setVisibility(View.VISIBLE);
                 third_layout.setVisibility(View.GONE);
                 fourth_layout.setVisibility(View.GONE);
+                fifth_layout.setVisibility(View.GONE);
                 break;
             case 3: // Drawer 3
                 color = R.color.color_3;
@@ -236,6 +240,15 @@ class AppDrawer {
                 second_layout.setVisibility(View.GONE);
                 third_layout.setVisibility(View.GONE);
                 fourth_layout.setVisibility(View.VISIBLE);
+                fifth_layout.setVisibility(View.GONE);
+                break;
+            case 4: // Drawer 3
+                color = R.color.color_4;
+                first_layout.setVisibility(View.GONE);
+                second_layout.setVisibility(View.GONE);
+                third_layout.setVisibility(View.GONE);
+                fourth_layout.setVisibility(View.GONE);
+                fifth_layout.setVisibility(View.VISIBLE);
                 break;
         }
         bottomDrawer.setBackgroundColor(ContextCompat.getColor(activity, color));
