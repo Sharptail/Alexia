@@ -8,7 +8,7 @@
     android:paddingStart="8dp"
     android:paddingEnd="8dp"
     android:paddingTop="16dp"
-    tools:context="sg.edu.nyp.alexia.AppointmentChecker">
+    tools:context="sg.edu.nyp.alexia.checkin.AppointmentChecker">
 
     <Button
         android:id="@+id/btnLocation"

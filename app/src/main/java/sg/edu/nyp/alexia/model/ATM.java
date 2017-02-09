@@ -1,4 +1,4 @@
-package sg.edu.nyp.alexia.Class;
+package sg.edu.nyp.alexia.model;
 
 import com.mapbox.mapboxsdk.annotations.Marker;
 
@@ -6,18 +6,18 @@ import com.mapbox.mapboxsdk.annotations.Marker;
  * Created by Jeffry on 11/1/17.
  */
 
-public class Elevator {
+public class ATM {
     private String name;
     private double lat;
     private double lng;
     private double distance;
     private Marker marker;
 
-    public Elevator(){
+    public ATM(){
 
     }
 
-    public Elevator(String name, double lat, double lng, double distance, Marker marker) {
+    public ATM(String name, double lat, double lng, double distance, Marker marker) {
         this.name = name;
         this.lat = lat;
         this.lng = lng;

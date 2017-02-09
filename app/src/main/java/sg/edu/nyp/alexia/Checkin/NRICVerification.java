@@ -1,17 +1,20 @@
-package sg.edu.nyp.alexia;
+package sg.edu.nyp.alexia.checkin;
 
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.InputFilter;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
@@ -30,21 +33,24 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import sg.edu.nyp.alexia.R;
+import sg.edu.nyp.alexia.receivers.SmsReceiver;
 
 public class NRICVerification extends AppCompatActivity {
 
-    public static final String PREFS_NRIC = "MyNricFile";
+    public static final String SMS_RECEIVED_ACTION = "android.provider.Telephony.SMS_RECEIVED";
     private static final String TAG = "NRICVerification";
     public static String OTP;
     public static String smsPhone;
     public static String NRIC;
+    static ProgressDialog progress;
+    SmsReceiver smsReceiver;
     private EditText mTo;
     private Button mSend;
     private OkHttpClient mClient = new OkHttpClient();
     private Context mContext;
     private DatabaseReference rootRef;
-    static ProgressDialog progress;
-
+    IntentFilter filter;
 
     public static String getNRIC() {
         return NRIC;
@@ -75,6 +81,8 @@ public class NRICVerification extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.nric_verify);
 
+        filter = new IntentFilter(SMS_RECEIVED_ACTION);
+
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 
         rootRef = FirebaseDatabase.getInstance().getReference().child("Patients");
@@ -103,7 +111,7 @@ public class NRICVerification extends AppCompatActivity {
                                     Log.e(TAG, "This is snapshot: " + smsPhone);
                                     posting();
                                     progress.dismiss();
-                                    Intent intent = new Intent(NRICVerification.this, OTPVerification.class);
+                                    Intent intent = new Intent(NRICVerification.this, sg.edu.nyp.alexia.checkin.OTPVerification.class);
                                     startActivity(intent);
                                 }
 
@@ -129,6 +137,20 @@ public class NRICVerification extends AppCompatActivity {
                 });
             }
         });
+
+        EditText editText = (EditText) findViewById(R.id.txtNRIC);
+        editText.setOnEditorActionListener(new EditText.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                boolean handled = false;
+                if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                    mSend.performClick();
+                    handled = true;
+                }
+                return handled;
+            }
+        });
+        editText.setFilters(new InputFilter[] {new InputFilter.AllCaps()});
     }
 
 

@@ -1,13 +1,14 @@
-package sg.edu.nyp.alexia;
+package sg.edu.nyp.alexia.model;
 
 import com.google.firebase.database.Exclude;
 import com.google.firebase.database.IgnoreExtraProperties;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 @IgnoreExtraProperties
-public class Appointments {
+public class Appointments implements Serializable{
 
     public String date;
     public String time;
@@ -22,6 +23,7 @@ public class Appointments {
     public Appointments() {
 
     }
+
     public Appointments( String date, String time, String type, String checkin, String doctor, String room) {
         this.date = date;
         this.time = time;
@@ -31,12 +33,24 @@ public class Appointments {
         this.room = room;
     }
 
+    public String getType() {
+        return type;
+    }
+
     public String getCheckin() {
         return checkin;
     }
 
     public String getRoom() {
         return room;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public String getDate() {
+        return date;
     }
 
     @Exclude

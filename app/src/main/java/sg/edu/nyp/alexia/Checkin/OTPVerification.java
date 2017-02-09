@@ -1,6 +1,9 @@
-package sg.edu.nyp.alexia;
+package sg.edu.nyp.alexia.checkin;
 
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -12,14 +15,16 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import static java.security.AccessController.getContext;
+import sg.edu.nyp.alexia.R;
+import sg.edu.nyp.alexia.receivers.SmsReceiver;
+import sg.edu.nyp.alexia.model.MyNriceFile;
+import sg.edu.nyp.alexia.services.SensorService;
 
 public class OTPVerification extends AppCompatActivity {
 
-    public static final String PREFS_NRIC = "MyNricFile";
+    MyNriceFile MyNricFile = new MyNriceFile();
     NRICVerification nricVerification = new NRICVerification();
     private static final String TAG = "OTPVerification";
     String output;
@@ -33,8 +38,10 @@ public class OTPVerification extends AppCompatActivity {
     static EditText otp4;
     static EditText otp5;
     static EditText otp6;
-
     static Button button;
+
+    private SmsReceiver mSMSreceiver;
+    private IntentFilter mIntentFilter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,9 +55,10 @@ public class OTPVerification extends AppCompatActivity {
         otp5 = (EditText) findViewById(R.id.et5);
         otp6 = (EditText) findViewById(R.id.et6);
 
-        button = (Button)findViewById(R.id.gk);
+        button = (Button) findViewById(R.id.gk);
 
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+
 
         for (int i = 0; i < edtid.length; i++) {
             final int idtag = i;
@@ -69,8 +77,7 @@ public class OTPVerification extends AppCompatActivity {
                         }
                     }
 
-                    public void beforeTextChanged(CharSequence s, int start, int count,
-                                                  int after) {
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                         // TODO Auto-generated method stub
                     }
 
@@ -100,6 +107,20 @@ public class OTPVerification extends AppCompatActivity {
                 });
             }
         }
+
+        // Register SMS Receiver
+        mSMSreceiver = new SmsReceiver();
+        mIntentFilter = new IntentFilter();
+        mIntentFilter.addAction("android.provider.Telephony.SMS_RECEIVED");
+        registerReceiver(mSMSreceiver, mIntentFilter);
+    }
+
+    @Override
+    public void onDestroy()
+    {
+        super.onDestroy();
+        // Unregister the SMS receiver
+        unregisterReceiver(mSMSreceiver);
     }
 
     @Override
@@ -116,13 +137,12 @@ public class OTPVerification extends AppCompatActivity {
         Log.e(TAG, "Keyed in " + output);
         Log.e(TAG, output + " = " + nricVerification.getOTP());
         if (output.equals(nricVerification.getOTP())) {
-            // Store to shared preferences
-            SharedPreferences.Editor editor = getSharedPreferences(PREFS_NRIC, 0).edit();
-            editor.putString("Nric", nricVerification.getNRIC() );
-            editor.commit();
+
+            MyNricFile.setNric(nricVerification.getNRIC(), OTPVerification.this);
 
             Intent intent = new Intent(OTPVerification.this, AppointmentChecker.class);
             startActivity(intent);
+            finish();
         } else {
             Toast.makeText(getApplicationContext(), "Invalid OTP!", Toast.LENGTH_SHORT).show();
         }
@@ -140,6 +160,19 @@ public class OTPVerification extends AppCompatActivity {
         editTextView[0].setFocusableInTouchMode(true);
         editTextView[0].requestFocus();
         editTextView[0].setSelected(true);
+    }
+
+    //Check if SensorService is running
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                Log.i ("isMyServiceRunning?", true+"");
+                return true;
+            }
+        }
+        Log.i ("isMyServiceRunning?", false+"");
+        return false;
     }
 
     public void receivedSms(String message) {

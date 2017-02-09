@@ -1,4 +1,4 @@
-package sg.edu.nyp.alexia.Class;
+package sg.edu.nyp.alexia.model;
 
 import android.content.Context;
 import android.view.LayoutInflater;

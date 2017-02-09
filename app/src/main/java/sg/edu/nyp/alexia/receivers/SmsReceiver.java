@@ -1,4 +1,4 @@
-package sg.edu.nyp.alexia;
+package sg.edu.nyp.alexia.receivers;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -9,7 +9,7 @@ import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.util.Log;
 
-import static android.R.id.message;
+import sg.edu.nyp.alexia.checkin.OTPVerification;
 
 public class SmsReceiver extends BroadcastReceiver {
 
@@ -40,7 +40,7 @@ public class SmsReceiver extends BroadcastReceiver {
                 Log.e(TAG, senderNum);
                 try {
                     if (senderNum.equals("+61448541925")) {
-                        String code = null;
+                        String code;
                         int index = message.indexOf(":");
                         if (index != -1) {
                             int start = index + 2;

@@ -1,4 +1,4 @@
-package sg.edu.nyp.alexia;
+package sg.edu.nyp.alexia.model;
 
 import com.google.firebase.database.Exclude;
 import com.google.firebase.database.IgnoreExtraProperties;
