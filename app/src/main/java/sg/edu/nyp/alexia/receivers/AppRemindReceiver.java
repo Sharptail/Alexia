@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.NotificationCompat;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.firebase.database.ChildEventListener;
@@ -42,8 +43,7 @@ public class AppRemindReceiver extends BroadcastReceiver implements Serializable
     public List<Appointments> mAppointments = new ArrayList<Appointments>();
     private DatabaseReference patientAppointDB;
     private ValueEventListener vAppointListener;
-    private DatabaseReference mDatabaseReference;
-    private ChildEventListener mChildEventListener;
+
     // For NRIC
     public static String nricLog;
     MyNriceFile MyNricFile = new MyNriceFile();
@@ -55,55 +55,61 @@ public class AppRemindReceiver extends BroadcastReceiver implements Serializable
     @Override
     public void onReceive(Context context, Intent intent) {
 
-        nricLog = MyNricFile.getNric(context);
+        if (TextUtils.equals(intent.getAction(), "sg.edu.nyp.alexia.ShutGeoCheckin")) {
+            context.stopService(new Intent(context, GeoCheckinService.class));
+        } else {
 
-        Log.e("APP REMIND", "RECEIVED");
+            nricLog = MyNricFile.getNric(context);
 
-        Calendar c = Calendar.getInstance();
-        System.out.println("Current time => " + c.getTime());
-        final Context ctx = context;
+            Log.e("APP REMIND", "RECEIVED");
 
-        SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
-        final String formattedDate = df.format(c.getTime());
-        patientAppointDB = FirebaseDatabase.getInstance().getReference().child("Patients").child(nricLog).child("Appointments");
+            Calendar c = Calendar.getInstance();
+            System.out.println("Current time => " + c.getTime());
+            final Context ctx = context;
 
-        Log.e("FORMATTED DATE", formattedDate);
+            SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+            final String formattedDate = df.format(c.getTime());
+            patientAppointDB = FirebaseDatabase.getInstance().getReference().child("Patients").child(nricLog).child("Appointments");
 
-        //Initialize ValueEventListener
-        ValueEventListener appointListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+            Log.e("FORMATTED DATE", formattedDate);
 
-                for (DataSnapshot appointSnap : dataSnapshot.getChildren()) {
-                    Appointments appointments = appointSnap.getValue(Appointments.class);
-                    mAppointments.add(appointments);
+            //Initialize ValueEventListener
+            ValueEventListener appointListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+
+                    for (DataSnapshot appointSnap : dataSnapshot.getChildren()) {
+                        Appointments appointments = appointSnap.getValue(Appointments.class);
+                        mAppointments.add(appointments);
+                    }
+
+
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable() {
+                        public void run() {
+                            postNote(formattedDate, ctx);
+                        }
+                    }, 3000);
                 }
 
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    // Getting Post failed, log a message
+                    Log.w("AppRemindReceiver", "loadAppointment:onCancelled", databaseError.toException());
+                }
+            };
 
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    public void run() {
-                        postNote(formattedDate, ctx);
-                    }
-                }, 5000);
-            }
+            patientAppointDB.addValueEventListener(appointListener);
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                // Getting Post failed, log a message
-                Log.w("AppRemindReceiver", "loadAppointment:onCancelled", databaseError.toException());
-            }
-        };
-
-        patientAppointDB.addValueEventListener(appointListener);
-
-        vAppointListener = appointListener;
-
+            vAppointListener = appointListener;
+        }
     }
 
-    private Boolean postNotification;
+    public Boolean postNotification;
 
     public void postNote(String formattedDate, Context ctx) {
+
+        postNotification = false;
 
         for (int i = 0; i < mAppointments.size(); i++) {
             Log.e("OnDataChange", String.valueOf(mAppointments.get(i).getDate()));
@@ -112,14 +118,14 @@ public class AppRemindReceiver extends BroadcastReceiver implements Serializable
 
                 NotificationManager notificationManager = (NotificationManager) ctx.getSystemService(NOTIFICATION_SERVICE);
 
-                Intent resultIntent = new Intent("sg.edu.nyp.alexia.GoogleMap");
-                PendingIntent resultPendingIntent = PendingIntent.getBroadcast(ctx,(int) System.currentTimeMillis(),resultIntent,0);
+                Intent googMapIntent = new Intent("sg.edu.nyp.alexia.GoogleMap");
+                PendingIntent resultGoogMapIntent = PendingIntent.getBroadcast(ctx, (int) System.currentTimeMillis(), googMapIntent, 0);
 
                 NotificationCompat.Builder noti = new NotificationCompat.Builder(ctx);
                 noti.setContentTitle(String.valueOf(mAppointments.get(i).getType()) + " Appointment");
                 noti.setContentText("Time: " + String.valueOf(mAppointments.get(i).getTime()));
                 noti.setSmallIcon(R.drawable.notification_icon);
-                noti.addAction(new NotificationCompat.Action(0,"Get Direction", resultPendingIntent));
+                noti.addAction(new NotificationCompat.Action(0,"Get Direction", resultGoogMapIntent));
                 noti.setPriority(NotificationCompat.PRIORITY_MAX);
                 noti.setWhen(0);
                 noti.setOngoing(true);
@@ -130,6 +136,7 @@ public class AppRemindReceiver extends BroadcastReceiver implements Serializable
                 postNotification = true;
             }
         }
+        Log.e("postNotification is:", String.valueOf(postNotification));
         if (postNotification) {
             // Initialize GeoCheckinService
             Bundle bundle = new Bundle();
@@ -140,6 +147,8 @@ public class AppRemindReceiver extends BroadcastReceiver implements Serializable
             if (!isMyServiceRunning(mGeoCheckinService.getClass(), ctx)) {
                 ctx.startService(mServiceIntent);
             }
+        } else {
+
         }
         patientAppointDB.removeEventListener(vAppointListener);
     }

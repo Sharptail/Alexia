@@ -12,7 +12,6 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
@@ -24,7 +23,6 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -37,14 +35,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import sg.edu.nyp.alexia.R;
 import sg.edu.nyp.alexia.model.Appointments;
 import sg.edu.nyp.alexia.model.MyNriceFile;
 import sg.edu.nyp.alexia.model.Patients;
 import sg.edu.nyp.alexia.MainActivity;
-import sg.edu.nyp.alexia.R;
 import sg.edu.nyp.alexia.RoutingActivity;
-import sg.edu.nyp.alexia.services.GeoCheckinService;
 import sg.edu.nyp.alexia.services.GeofenceService;
+import sg.edu.nyp.alexia.services.SensorService;
+
+import static android.media.CamcorderProfile.get;
 
 public class AppointmentChecker extends AppCompatActivity implements Serializable{
 
@@ -62,17 +62,15 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
     private AppointmentAdapter mAdapter;
     //Define Views
     private TextView mPatientName;
-    private TextView mPatientGender;
-    private TextView mPatientBirthdate;
-    private TextView mPatientAge;
     private RecyclerView mAppointmentRecycler;
     private Context mContext;
     private DatabaseReference mDatabaseReference;
     private ChildEventListener mChildEventListener;
     public static String nricLog;
     MyNriceFile MyNricFile = new MyNriceFile();
+    // For SensorService
     Intent mServiceIntent;
-    private GeoCheckinService mGeocheckinService;
+    private SensorService mSensorService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,22 +81,24 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
 
         progress = ProgressDialog.show(this, "Loading", "Please Wait A Moment", true);
 
+        // Initialize SensorService
+        mSensorService = new SensorService(this);
+        mServiceIntent = new Intent(this, mSensorService.getClass());
+        if (!isMyServiceRunning(mSensorService.getClass())) {
+            startService(mServiceIntent);
+        }
+
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             public void run() {
-                // Initialize GeoCheckinService
-                Bundle bundle = new Bundle();
-                bundle.putSerializable("Appointment_List", (Serializable) mAppointments);
-                mGeocheckinService = new GeoCheckinService(AppointmentChecker.this);
-                mServiceIntent = new Intent(AppointmentChecker.this, mGeocheckinService.getClass());
-                mServiceIntent.putExtras(bundle);
-                if (nricLog != null) {
-                    if (!isMyServiceRunning(mGeocheckinService.getClass())) {
-                        startService(mServiceIntent);
-                    }
+                Bundle extras = getIntent().getExtras();
+                if (extras != null) {
+                    String value = extras.getString("Appointment");
+                    Log.e("IntentApoint", value);
+                    geoTrackNoti(value);
                 }
             }
-        }, 5000);
+        }, 3000);
     }
 
     //Check if SensorService is running
@@ -191,6 +191,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         }
 
         mAdapter.cleanupListener();
+        finish();
     }
 
     @Override
@@ -225,6 +226,10 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                             public void onClick(DialogInterface dialog, int which) {
                                 //Action
                                 patientAppointDB.child(firebaseButtonView).child("checkin").setValue("Yes");
+                                Intent inbroadcast = new Intent();
+                                inbroadcast.putExtra("Notification", mAppointmentIndex + 1000);
+                                inbroadcast.setAction("sg.edu.nyp.alexia.closeNotification");
+                                sendBroadcast(inbroadcast);
                             }
                         })
                         .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -248,8 +253,48 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         } else {
             Log.e(TAG, "CHECKED IN ALREADY LIEO LA");
             Intent intent = new Intent(this, RoutingActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.putExtra("result", mAppointments.get(mAppointmentIndex).getRoom());
             startActivity(intent);
+        }
+    }
+
+    public void geoTrackNoti(String index) {
+        final int appIndex = Integer.parseInt(index);
+        final String appointIndex = mAppointmentIds.get(appIndex);
+
+        if (mAppointments.get(appIndex).getCheckin().equals("No")) {
+            if (geofenceService.getInGeoGeoFence()) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Appointment")
+                        .setMessage("Would you like to check in your appointment?")
+                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                //Action
+                                patientAppointDB.child(appointIndex).child("checkin").setValue("Yes");
+                                Intent inbroadcast = new Intent();
+                                inbroadcast.putExtra("Notification", appIndex + 1000);
+                                inbroadcast.setAction("sg.edu.nyp.alexia.closeNotification");
+                                sendBroadcast(inbroadcast);
+                            }
+                        })
+                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                //Action
+                            }
+                        })
+                        .show();
+            } else {
+                new AlertDialog.Builder(this)
+                        .setTitle("Appointment")
+                        .setMessage("Please Get Closer!")
+                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                //Action
+                            }
+                        })
+                        .show();
+            }
         }
     }
 
@@ -454,4 +499,3 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         }
     }
 }
-

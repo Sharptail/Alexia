@@ -91,5 +91,12 @@
                 <action android:name="sg.edu.nyp.alexia.AppRemindReceiver"/>
             </intent-filter>
         </receiver>
+        <receiver
+            android:name=".receivers.CheckinReceiver"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="sg.edu.nyp.alexia.closeNotification"/>
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

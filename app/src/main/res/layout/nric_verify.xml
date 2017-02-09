@@ -7,7 +7,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="sg.edu.nyp.alexia.Checkin.NRICVerification">
+    tools:context="sg.edu.nyp.alexia.checkin.NRICVerification">
 
     <TextView
         android:id="@+id/textView"
@@ -50,8 +50,10 @@
         android:cursorVisible="false"
         android:gravity="center"
         android:hint="S1234567E"
+        android:singleLine="true"
         android:maxLines="1"
-        android:textSize="32sp" />
+        android:textSize="32sp"
+        android:imeOptions="actionNext" />
 
     <Button
         android:id="@+id/btnSendSMS"

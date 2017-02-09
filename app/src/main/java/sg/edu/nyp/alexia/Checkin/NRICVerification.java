@@ -6,11 +6,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.InputFilter;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
@@ -133,6 +137,20 @@ public class NRICVerification extends AppCompatActivity {
                 });
             }
         });
+
+        EditText editText = (EditText) findViewById(R.id.txtNRIC);
+        editText.setOnEditorActionListener(new EditText.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                boolean handled = false;
+                if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                    mSend.performClick();
+                    handled = true;
+                }
+                return handled;
+            }
+        });
+        editText.setFilters(new InputFilter[] {new InputFilter.AllCaps()});
     }
 
 

@@ -42,9 +42,6 @@ public class OTPVerification extends AppCompatActivity {
 
     private SmsReceiver mSMSreceiver;
     private IntentFilter mIntentFilter;
-    // For SensorService
-    Intent mServiceIntent;
-    private SensorService mSensorService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,8 +77,7 @@ public class OTPVerification extends AppCompatActivity {
                         }
                     }
 
-                    public void beforeTextChanged(CharSequence s, int start, int count,
-                                                  int after) {
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                         // TODO Auto-generated method stub
                     }
 
@@ -147,12 +143,6 @@ public class OTPVerification extends AppCompatActivity {
             Intent intent = new Intent(OTPVerification.this, AppointmentChecker.class);
             startActivity(intent);
             finish();
-            // Initialize SensorService
-            mSensorService = new SensorService(this);
-            mServiceIntent = new Intent(this, mSensorService.getClass());
-            if (!isMyServiceRunning(mSensorService.getClass())) {
-               startService(mServiceIntent);
-            }
         } else {
             Toast.makeText(getApplicationContext(), "Invalid OTP!", Toast.LENGTH_SHORT).show();
         }
