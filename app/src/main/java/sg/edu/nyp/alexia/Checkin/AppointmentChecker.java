@@ -35,12 +35,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import sg.edu.nyp.alexia.MainActivity;
 import sg.edu.nyp.alexia.R;
+import sg.edu.nyp.alexia.RoutingActivity;
 import sg.edu.nyp.alexia.model.Appointments;
 import sg.edu.nyp.alexia.model.MyNriceFile;
 import sg.edu.nyp.alexia.model.Patients;
-import sg.edu.nyp.alexia.MainActivity;
-import sg.edu.nyp.alexia.RoutingActivity;
 import sg.edu.nyp.alexia.services.GeofenceService;
 import sg.edu.nyp.alexia.services.SensorService;
 

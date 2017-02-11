@@ -8,7 +8,6 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -27,9 +26,9 @@ import sg.edu.nyp.alexia.model.MyNriceFile;
 import sg.edu.nyp.alexia.services.SensorService;
 
 public class MainActivity extends Activity {
-
     // For map download
-    private String mapDownloadURL = "https://firebasestorage.googleapis.com/v0/b/mocktest-efa0d.appspot.com/o/singapore7-gh.zip?alt=media&token=752a6e87-1d69-4f23-9701-43e78f872a4b";
+    private String mapDownloadURL = "https://firebasestorage.googleapis.com/v0/b/mocktest-efa0d.appspot.com/o/singapore.zip?alt=media&token=1dcc196d-954f-4e8a-93c5-2101af28fcd8";
+
     private String targetFilePath = "/sdcard/Download/graphhopper/maps/";
 
     // For NRIC verification

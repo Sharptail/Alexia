@@ -13,6 +13,29 @@
         android:layout_height="match_parent"
         mapbox:style_url="@string/mapbox_url">
 
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/current_level_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Block L Level 3"
+                android:textColor="@color/black"
+                android:textSize="15dp"
+                android:padding="5dp"/>
+
+            <Button
+                android:id="@+id/layer_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawableStart="@drawable/layers"
+                style="@style/Base.Widget.AppCompat.Button.Borderless"
+                android:onClick="openLayers"
+                />
+        </LinearLayout>
+
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/qr_scanner_button"
             android:layout_width="wrap_content"
