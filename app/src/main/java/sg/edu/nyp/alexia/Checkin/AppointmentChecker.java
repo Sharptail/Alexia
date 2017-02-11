@@ -44,8 +44,6 @@ import sg.edu.nyp.alexia.RoutingActivity;
 import sg.edu.nyp.alexia.services.GeofenceService;
 import sg.edu.nyp.alexia.services.SensorService;
 
-import static android.media.CamcorderProfile.get;
-
 public class AppointmentChecker extends AppCompatActivity implements Serializable{
 
     private static final String TAG = "AppointmentChecker";

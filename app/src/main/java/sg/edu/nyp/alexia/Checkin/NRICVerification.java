@@ -44,7 +44,6 @@ public class NRICVerification extends AppCompatActivity {
     public static String smsPhone;
     public static String NRIC;
     static ProgressDialog progress;
-    SmsReceiver smsReceiver;
     private EditText mTo;
     private Button mSend;
     private OkHttpClient mClient = new OkHttpClient();
