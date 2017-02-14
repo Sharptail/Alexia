@@ -58,7 +58,8 @@
             android:label="@string/otp_verify" />
         <activity
             android:name=".checkin.AppointmentChecker"
-            android:label="@string/appointment" />
+            android:label="@string/appointment"
+            android:theme="@style/AppThemeAppoint"/>
 
         <!-- Services -->
         <service android:name="com.mapbox.mapboxsdk.telemetry.TelemetryService" />

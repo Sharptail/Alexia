@@ -15,10 +15,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
+import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -47,12 +50,13 @@ import sg.edu.nyp.alexia.MainActivity;
 import sg.edu.nyp.alexia.R;
 import sg.edu.nyp.alexia.RoutingActivity;
 import sg.edu.nyp.alexia.model.Appointments;
+import sg.edu.nyp.alexia.model.HelpInfo;
 import sg.edu.nyp.alexia.model.MyNriceFile;
 import sg.edu.nyp.alexia.model.Patients;
 import sg.edu.nyp.alexia.receivers.GeofenceReceiver;
 import sg.edu.nyp.alexia.services.SensorService;
 
-public class AppointmentChecker extends AppCompatActivity implements Serializable{
+public class AppointmentChecker extends AppCompatActivity implements Serializable {
     private static final String TAG = "AppointmentChecker";
 
     static ProgressDialog progress;
@@ -83,6 +87,9 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
     // For NRIC
     MyNriceFile MyNricFile = new MyNriceFile();
 
+    // For Help Info
+    HelpInfo myHelpInfo = new HelpInfo();
+
     // For SensorService
     Intent mServiceIntent;
     private SensorService mSensorService;
@@ -91,6 +98,9 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.appointment);
+
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(myToolbar);
 
         // Initialize SensorService
         mSensorService = new SensorService(this);
@@ -112,23 +122,49 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
             }
         }, 3000);
 
+        if (myHelpInfo.getHelp(this) == null) {
+            helpInfo();
+        }
+
+        progress = ProgressDialog.show(this, "Loading", "Please Wait A Moment", true);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_appoint, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.help:
+                helpInfo();
+                return true;
+
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void helpInfo() {
         RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         sv = new ShowcaseView.Builder(this)
                 .setContentTitle("Appointment Check-in")
-                .setContentText("Tap on the your appointment to check-in.\n\n" +
-                        "For appointment that has been checked-in, a \u2713 will be marked.\n\n" +
-                        "For appointment that is appointed today, a \u2691 will be marked.\n\n" +
+                .setContentText("Tap on your appointment to check-in.\n\n" +
+                        "You will see a \u2713 upon successful check-in.\n\n" +
+                        "You will see a \u2691 for today's appointment.\n\n" +
                         "\n" +
-                        "TAKE NOTE:\n You can only check-in one hour before the appointment time on the appointed date at the destination")
+                        "TAKE NOTE\nCheck-in can only be done when:\n\u00B7 You have arrived at the at the Hospital\n\u00B7 At most one hour before your appointment")
                 .setStyle(R.style.CustomShowcaseTheme2)
                 .hideOnTouchOutside()
                 .replaceEndButton(R.layout.gotit_custom_button)
                 .build();
         sv.setButtonPosition(lps);
-
-        progress = ProgressDialog.show(this, "Loading", "Please Wait A Moment", true);
+        myHelpInfo.setHelp("Yes", this);
     }
 
     //Check if SensorService is running
