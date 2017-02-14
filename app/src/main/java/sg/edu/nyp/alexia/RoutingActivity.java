@@ -20,6 +20,7 @@ import android.os.Handler;
 import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -36,6 +37,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.amlcurran.showcaseview.ShowcaseView;
+import com.github.amlcurran.showcaseview.SimpleShowcaseEventListener;
 import com.github.amlcurran.showcaseview.targets.Target;
 import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.firebase.database.DataSnapshot;
@@ -62,6 +64,8 @@ import com.mapbox.mapboxsdk.annotations.Polyline;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
+import com.mapbox.mapboxsdk.constants.MyBearingTracking;
+import com.mapbox.mapboxsdk.constants.MyLocationTracking;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.geometry.VisibleRegion;
@@ -137,6 +141,9 @@ public class RoutingActivity extends Activity {
     private Button startButton;
     private Button nextButton;
     private ShowcaseView sv;
+    private Boolean trackingMode = false;
+    private Button trackingButton;
+    private LatLng currentLatLng;
 
     @Override
     protected void onStart() {
@@ -166,6 +173,7 @@ public class RoutingActivity extends Activity {
         ocrButton = (ImageButton) findViewById(R.id.ocr_button);
         startButton = (Button) findViewById(R.id.start_button);
         nextButton = (Button) findViewById(R.id.next_button);
+        trackingButton = (Button) findViewById(R.id.tracking_button);
 
         drawerParams = drawerLayout.getLayoutParams();
 
@@ -397,19 +405,7 @@ public class RoutingActivity extends Activity {
             }
         }, 5000);
 
-        RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-        Target viewTarget = new ViewTarget(R.id.qr_scanner_button, this);
-        sv = new ShowcaseView.Builder(this)
-                .setTarget(viewTarget)
-                .setContentTitle("Position Scanner")
-                .setContentText("Scan nearby QR Code to indicate your current position")
-                .setStyle(R.style.CustomShowcaseTheme2)
-                .hideOnTouchOutside()
-                .replaceEndButton(R.layout.gotit_custom_button)
-                .build();
-        sv.setButtonPosition(lps);
+        showQrCameraTut();
     }
 
     @Override
@@ -627,6 +623,7 @@ public class RoutingActivity extends Activity {
     }
 
     public void openQRScanner(View view) {
+        sv.hide();
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == -1) {
             requestPermissions(new String[]{
                     Manifest.permission.CAMERA
@@ -655,6 +652,7 @@ public class RoutingActivity extends Activity {
                 }
                 final LatLng points = new LatLng(lat, lng);
                 start = points;
+                currentLatLng = start;
                 if(isEndFirst == false){
                     end = null;
                 }
@@ -710,6 +708,109 @@ public class RoutingActivity extends Activity {
             //convert to int only
             roomSearchView.setQuery(mTess.getUTF8Text(),true);
         }
+    }
+
+    public void showQrCameraTut(){
+        Button gotitButton = (Button) LayoutInflater.from(this).inflate(R.layout.gotit_custom_button, sv, false);
+        RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        Target viewTarget = new ViewTarget(R.id.qr_scanner_button, this);
+        sv = new ShowcaseView.Builder(this)
+                .setTarget(viewTarget)
+                .setContentTitle("Position Scanner")
+                .setContentText("Scan nearby QR Code to indicate your current position")
+                .setStyle(R.style.CustomShowcaseTheme2)
+                .replaceEndButton(gotitButton)
+                .setShowcaseEventListener(
+                        new SimpleShowcaseEventListener() {
+                            @Override
+                            public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                                showLayerTut();
+                            }
+                        }
+                )
+                .build();
+        sv.setButtonPosition(lps);
+    }
+
+    public void showLayerTut(){
+        Button gotitButton = (Button) LayoutInflater.from(this).inflate(R.layout.gotit_custom_button, sv, false);
+        RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        Target viewTarget = new ViewTarget(R.id.layer_button, this);
+        sv = new ShowcaseView.Builder(this)
+                .setTarget(viewTarget)
+                .setContentTitle("Building Level")
+                .setContentText("This will show you the levels of this building")
+                .setStyle(R.style.CustomShowcaseTheme2)
+                .replaceEndButton(gotitButton)
+                .setShowcaseEventListener(
+                        new SimpleShowcaseEventListener() {
+                            @Override
+                            public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                                showTrackingTut();
+                            }
+                        }
+                )
+                .build();
+        sv.setButtonPosition(lps);
+    }
+
+    public void showTrackingTut(){
+        Button gotitButton = (Button) LayoutInflater.from(this).inflate(R.layout.gotit_custom_button, sv, false);
+        RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        Target viewTarget = new ViewTarget(R.id.tracking_button, this);
+        sv = new ShowcaseView.Builder(this)
+                .setTarget(viewTarget)
+                .setContentTitle("Compass")
+                .setContentText("Enable this to rotate the map as you rotate your phone")
+                .setStyle(R.style.CustomShowcaseTheme2)
+                .replaceEndButton(gotitButton)
+                .build();
+        sv.setButtonPosition(lps);
+    }
+
+    public void toggleTrackingMode(View view){
+        sv.hide();
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+                if(trackingMode == true){
+                    // Disable tracking dismiss on map gesture
+                    mapboxMap.getTrackingSettings().setDismissAllTrackingOnGesture(false);
+
+                    // Enable location and bearing tracking
+                    mapboxMap.getTrackingSettings().setMyLocationTrackingMode(MyLocationTracking.TRACKING_NONE);
+                    mapboxMap.getTrackingSettings().setMyBearingTrackingMode(MyBearingTracking.NONE);
+                    mapboxMap.setMyLocationEnabled(false);
+                    resetMapView();
+                    trackingButton.setBackgroundDrawable(getDrawable(R.drawable.default_tracking));
+                    trackingMode = false;
+                }else if(trackingMode == false){
+                    // Disable tracking dismiss on map gesture
+                    mapboxMap.getTrackingSettings().setDismissAllTrackingOnGesture(false);
+
+                    // Enable location and bearing tracking
+                    mapboxMap.getTrackingSettings().setMyLocationTrackingMode(MyLocationTracking.TRACKING_FOLLOW);
+                    mapboxMap.getTrackingSettings().setMyBearingTrackingMode(MyBearingTracking.COMPASS);
+                    mapboxMap.setMyLocationEnabled(false);
+                    trackingButton.setBackgroundDrawable(getDrawable(R.drawable.tracking));
+                    trackingMode = true;
+                    CameraPosition position = new CameraPosition.Builder()
+                            .target(currentLatLng)
+                            .zoom(22) // Sets the zoom
+                            .tilt(60)
+                            .build(); // Creates a CameraPosition from the builder
+                    mapboxMap.setCameraPosition(position);
+//                    mapboxMap.animateCamera(CameraUpdateFactory
+//                            .newCameraPosition(position), 2000);
+                }
+            }
+        });
     }
 
     public void closeDrawer(View view) {
@@ -827,6 +928,7 @@ public class RoutingActivity extends Activity {
     }
 
     public void openLayers(View view){
+        sv.hide();
         ArrayList<String> layerList = new ArrayList<>();
         if(currentLevel == 3){
             layerList.add("Level 3 (Current Level)");
@@ -905,19 +1007,31 @@ public class RoutingActivity extends Activity {
                     LatLng newPosition = new LatLng(calculatedPoints.get(userCurrentPos + 1).getLatitude(), calculatedPoints.get(userCurrentPos + 1).getLongitude());
                     LatLng nextPosition = new LatLng(calculatedPoints.get(userCurrentPos + 2).getLatitude(), calculatedPoints.get(userCurrentPos + 2).getLongitude());
                     startMarker.setPosition(newPosition);
+                    currentLatLng = newPosition;
                     mapboxMap.removePolyline(calculatedPolylines.get(userCurrentPos));
 
                     Double bearing = getBearing(newPosition, nextPosition);
 //                    logUser(Double.toString(bearing));
                     //ZOOM TO LOCATION
-                    CameraPosition position = new CameraPosition.Builder()
-                            .target(newPosition)
-                            .zoom(22) // Sets the zoom
-                            .tilt(60)
-                            .bearing(bearing)
-                            .build(); // Creates a CameraPosition from the builder
-                    mapboxMap.animateCamera(CameraUpdateFactory
-                            .newCameraPosition(position), 2000);
+                    if(trackingMode == false){
+                        CameraPosition position = new CameraPosition.Builder()
+                                .target(newPosition)
+                                .zoom(22) // Sets the zoom
+                                .tilt(60)
+                                .bearing(bearing)
+                                .build(); // Creates a CameraPosition from the builder
+                        mapboxMap.animateCamera(CameraUpdateFactory
+                                .newCameraPosition(position), 2000);
+                    }else if(trackingMode == true){
+                        CameraPosition position = new CameraPosition.Builder()
+                                .target(newPosition)
+                                .zoom(22) // Sets the zoom
+                                .tilt(60)
+                                .build(); // Creates a CameraPosition from the builder
+                        mapboxMap.setCameraPosition(position);
+//                        mapboxMap.animateCamera(CameraUpdateFactory
+//                                .newCameraPosition(position), 2000);
+                    }
 
                     userCurrentPos++;
                 } else {
