@@ -14,9 +14,7 @@ public class Patients {
     public String birthdate;
     public String age;
 
-    public Patients() {
-
-    }
+    public Patients() {}
 
     public Patients(String name, String gender, String birthdate, String age){
         this.name = name;

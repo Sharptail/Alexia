@@ -12,8 +12,8 @@ import android.content.Intent;
 public class CheckinReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
+        // Close notification on check-in
         int appointIndex = intent.getIntExtra("Notification", -1);
-
         NotificationManager mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         mNotificationManager.cancel(appointIndex);
     }

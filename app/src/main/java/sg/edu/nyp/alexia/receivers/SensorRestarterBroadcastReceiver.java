@@ -15,11 +15,12 @@ import sg.edu.nyp.alexia.services.SensorService;
 public class SensorRestarterBroadcastReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        // Restart SensorService
         Log.i(SensorRestarterBroadcastReceiver.class.getSimpleName(), "Service Stops! Oooooooooooooppppssssss!!!!");
+        // Shutdown GeoCheckinService through broadcast to AppRemindReceiver
         Intent inbroadcast = new Intent();
         inbroadcast.setAction("sg.edu.nyp.alexia.ShutGeoCheckin");
         context.sendBroadcast(inbroadcast);
+        // Restart SensorService
         context.startService(new Intent(context, SensorService.class));
     }
 }

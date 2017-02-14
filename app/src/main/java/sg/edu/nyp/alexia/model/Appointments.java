@@ -18,11 +18,7 @@ public class Appointments implements Serializable{
     public String room;
     public Map<String, Boolean> appoint = new HashMap<>();
 
-
-
-    public Appointments() {
-
-    }
+    public Appointments() {}
 
     public Appointments( String date, String time, String type, String checkin, String doctor, String room) {
         this.date = date;

@@ -26,8 +26,11 @@
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
 
+    <!-- Reboot Receiver -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Notification Permission -->
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
 
     <application
@@ -35,13 +38,13 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
+        android:fullBackupContent="false"
         android:theme="@style/AppTheme">
-        <service android:name="com.mapbox.mapboxsdk.telemetry.TelemetryService" />
 
+        <!-- Activities -->
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -57,10 +60,8 @@
             android:name=".checkin.AppointmentChecker"
             android:label="@string/appointment" />
 
-        <service
-            android:name=".services.GeofenceService"
-            android:enabled="true"
-            android:exported="true" />
+        <!-- Services -->
+        <service android:name="com.mapbox.mapboxsdk.telemetry.TelemetryService" />
         <service
             android:name=".services.SensorService"
             android:enabled="true" />
@@ -68,6 +69,7 @@
             android:name=".services.GeoCheckinService"
             android:enabled="true" />
 
+        <!-- Receivers -->
         <receiver
             android:name=".receivers.SensorRestarterBroadcastReceiver"
             android:enabled="true"
@@ -79,24 +81,37 @@
         </receiver>
         <receiver
             android:name=".receivers.BootReceiver"
-            android:enabled="true">
+            android:enabled="true"
+            android:label="RestartServiceOnBoot">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
         <receiver
             android:name=".receivers.AppRemindReceiver"
-            android:enabled="true">
+            android:enabled="true"
+            android:label="AlarmManagerReceiver">
             <intent-filter>
                 <action android:name="sg.edu.nyp.alexia.AppRemindReceiver"/>
+                <action android:name="sg.edu.nyp.alexia.ShutGeoCheckin"/>
             </intent-filter>
         </receiver>
         <receiver
             android:name=".receivers.CheckinReceiver"
-            android:enabled="true">
+            android:enabled="true"
+            android:label="RemoveNotificationReceiver">
             <intent-filter>
                 <action android:name="sg.edu.nyp.alexia.closeNotification"/>
             </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".receivers.GeofenceReceiver"
+            android:enabled="true"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="sg.edu.nyp.alexia.GeofenceReceiver.ACTION_RECEIVE_GEOFENCE" />
+            </intent-filter>
+
         </receiver>
     </application>
 </manifest>

@@ -165,6 +165,8 @@ public class RoutingActivity extends Activity {
 
         drawerParams = drawerLayout.getLayoutParams();
 
+        MapboxAccountManager.start(this, getString(R.string.access_token));
+
         //initialize Tesseract API
         String language = "eng";
         ocrDatapath = getFilesDir()+ "/tesseract/";

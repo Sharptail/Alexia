@@ -29,24 +29,22 @@ public class SensorService extends Service {
     public static PendingIntent sender;
     NotificationActionReceiver mNotificationActionReceiver = new NotificationActionReceiver();
 
-    public SensorService(Context applicationContext) {
-        super();
-        Log.i("SensorService", "Initialized");
-    }
+    public SensorService(Context applicationContext) {}
 
-    public SensorService() {
-
-    }
+    public SensorService() {}
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
 
+        // Register Notification Action Receiver
         IntentFilter filter = new IntentFilter("sg.edu.nyp.alexia.GoogleMap");
         filter.addAction("sg.edu.nyp.alexia.AppointmentCheckin");
         this.registerReceiver(mNotificationActionReceiver, filter);
 
+        // Start AlarmManager for appointment reminder
         startAlarm();
+        // Force service to stick around even if system tries to shut it
         return START_STICKY;
     }
 
@@ -54,6 +52,8 @@ public class SensorService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.i("EXIT", "ondestroy!");
+        // Shutdown everything on destroy to ensure
+        // service to rebooted via Receiver
         am.cancel(sender);
         unregisterReceiver(mNotificationActionReceiver);
         Intent broadcastIntent = new Intent("sg.edu.nyp.alexia.RestartSensor");
@@ -62,16 +62,20 @@ public class SensorService extends Service {
 
     public void startAlarm() {
 
+        // Launch AppRemindReceiver
         pintent = new Intent("sg.edu.nyp.alexia.AppRemindReceiver");
         sender = PendingIntent.getBroadcast(this, 100, pintent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        am = (AlarmManager) getSystemService(ALARM_SERVICE);
-
+        // Set alarm time to check appointment
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 15);
         calendar.set(Calendar.MINUTE, 29);
         calendar.set(Calendar.SECOND, 30);
 
+        // Initialize Alarm
+        // For setting alarm time...
+        // Use calendar.getTimeInMillis() instead of System.currentTimeMillis()
+        am = (AlarmManager) getSystemService(ALARM_SERVICE);
         am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000 * 60 * 15 , sender);
         Log.e("ALARM MANAGER", "ALARM STARTED");
     }
@@ -82,11 +86,11 @@ public class SensorService extends Service {
         return null;
     }
 
+    // Receiver for notification actions
     class NotificationActionReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context ctx, Intent intent) {
-
             String action = intent.getAction();
 
             if(action.equals("sg.edu.nyp.alexia.GoogleMap")) {
@@ -97,20 +101,23 @@ public class SensorService extends Service {
                 pintent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
                 pintent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 try {
+                    // Start GoogleMap with designated end point coordinates mentioned above
                     ctx.startActivity(pintent);
                     collapsePanel(ctx);
                 } catch (ActivityNotFoundException ex) {
                     Toast.makeText(ctx, "Please install a maps application", Toast.LENGTH_LONG).show();
                     try {
+                        // Open Playstore for user to install Google Map
                         startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.maps" + "" + "&hl=en")));
                         collapsePanel(ctx);
-
                     } catch (android.content.ActivityNotFoundException anfe) {
+                        // Open Webpage for user to install Google Map
                         startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.apps.maps&hl=en")));
                         collapsePanel(ctx);
                     }
                 }
             } else if (action.equals("sg.edu.nyp.alexia.AppointmentCheckin")) {
+                // Start AppointmentCheckin and call check-in method
                 String appointIndex = intent.getStringExtra("Appointment");
                 Intent starterIntent = new Intent(ctx, AppointmentChecker.class);
                 starterIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -121,6 +128,7 @@ public class SensorService extends Service {
             }
         }
 
+        // For closing notification panel on notification action
         private void collapsePanel(Context sctx) {
             try {
                 Object sbservice = sctx.getSystemService("statusbar");
