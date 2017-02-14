@@ -33,6 +33,7 @@ import sg.edu.nyp.alexia.services.GeoCheckinService;
 import sg.edu.nyp.alexia.model.MyNriceFile;
 
 import static android.content.Context.NOTIFICATION_SERVICE;
+import static sg.edu.nyp.alexia.MainActivity.nricLog;
 
 /**
  * Created by Spencer on 3/2/2017.
@@ -40,12 +41,14 @@ import static android.content.Context.NOTIFICATION_SERVICE;
 
 public class AppRemindReceiver extends BroadcastReceiver implements Serializable{
 
+    // For appointment data retrieval from firebase
     public List<Appointments> mAppointments = new ArrayList<Appointments>();
+
+    // Firebase reference
     private DatabaseReference patientAppointDB;
     private ValueEventListener vAppointListener;
 
     // For NRIC
-    public static String nricLog;
     MyNriceFile MyNricFile = new MyNriceFile();
 
     // For GeoCheckinService
@@ -56,10 +59,9 @@ public class AppRemindReceiver extends BroadcastReceiver implements Serializable
     public void onReceive(Context context, Intent intent) {
 
         if (TextUtils.equals(intent.getAction(), "sg.edu.nyp.alexia.ShutGeoCheckin")) {
+            // Shutdown GeoCheckinService when broadcast
             context.stopService(new Intent(context, GeoCheckinService.class));
         } else {
-
-            nricLog = MyNricFile.getNric(context);
 
             Log.e("APP REMIND", "RECEIVED");
 
@@ -69,7 +71,7 @@ public class AppRemindReceiver extends BroadcastReceiver implements Serializable
 
             SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
             final String formattedDate = df.format(c.getTime());
-            patientAppointDB = FirebaseDatabase.getInstance().getReference().child("Patients").child(nricLog).child("Appointments");
+            patientAppointDB = FirebaseDatabase.getInstance().getReference().child("Patients").child(MyNricFile.getNric(context)).child("Appointments");
 
             Log.e("FORMATTED DATE", formattedDate);
 
@@ -77,13 +79,12 @@ public class AppRemindReceiver extends BroadcastReceiver implements Serializable
             ValueEventListener appointListener = new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
-
                     for (DataSnapshot appointSnap : dataSnapshot.getChildren()) {
                         Appointments appointments = appointSnap.getValue(Appointments.class);
                         mAppointments.add(appointments);
                     }
 
-
+                    // Post Notification
                     Handler handler = new Handler();
                     handler.postDelayed(new Runnable() {
                         public void run() {
@@ -111,6 +112,7 @@ public class AppRemindReceiver extends BroadcastReceiver implements Serializable
 
         postNotification = false;
 
+        // Loop through appointments and verify if appointed data is the same as today's date
         for (int i = 0; i < mAppointments.size(); i++) {
             Log.e("OnDataChange", String.valueOf(mAppointments.get(i).getDate()));
             if (mAppointments.get(i).getDate().equals(formattedDate) && mAppointments.get(i).getCheckin().equals("No")) {
@@ -138,7 +140,7 @@ public class AppRemindReceiver extends BroadcastReceiver implements Serializable
         }
         Log.e("postNotification is:", String.valueOf(postNotification));
         if (postNotification) {
-            // Initialize GeoCheckinService
+            // Initialize GeoCheckinService and pass appointment data
             Bundle bundle = new Bundle();
             bundle.putSerializable("Appointment_List", (Serializable) mAppointments);
             mGeoCheckinService = new GeoCheckinService(ctx);

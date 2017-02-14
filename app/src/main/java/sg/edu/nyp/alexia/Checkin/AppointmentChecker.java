@@ -31,7 +31,13 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.io.Serializable;
+import java.sql.Time;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -41,31 +47,42 @@ import sg.edu.nyp.alexia.RoutingActivity;
 import sg.edu.nyp.alexia.model.Appointments;
 import sg.edu.nyp.alexia.model.MyNriceFile;
 import sg.edu.nyp.alexia.model.Patients;
-import sg.edu.nyp.alexia.services.GeofenceService;
+import sg.edu.nyp.alexia.receivers.GeofenceReceiver;
 import sg.edu.nyp.alexia.services.SensorService;
 
-public class AppointmentChecker extends AppCompatActivity implements Serializable{
+import static java.text.DateFormat.getDateTimeInstance;
+import static java.util.Date.parse;
 
+public class AppointmentChecker extends AppCompatActivity implements Serializable{
     private static final String TAG = "AppointmentChecker";
+
     static ProgressDialog progress;
-    public List<String> mAppointmentIds = new ArrayList<>();
-    public List<Appointments> mAppointments = new ArrayList<>();
-    public int mAppointmentIndex;
-    //Google / Geofence Service
-    GeofenceService geofenceService = new GeofenceService();
-    //Firebase Database Reference1
+
+    // For retrieving geofence receiver's data
+    GeofenceReceiver geofenceReceiver = new GeofenceReceiver();
+
+    // For appointment data from firebase
+    private List<String> mAppointmentIds = new ArrayList<>();
+    private List<Appointments> mAppointments = new ArrayList<>();
+    private int mAppointmentIndex;
+    private AppointmentAdapter mAdapter;
+
+    // Firebase Database Reference
     private DatabaseReference patientDB;
     private DatabaseReference patientAppointDB;
     private ValueEventListener vPatientListener;
-    private AppointmentAdapter mAdapter;
-    //Define Views
+
+    // Define Views
     private TextView mPatientName;
+    private TextView mPatientHeader;
     private RecyclerView mAppointmentRecycler;
     private Context mContext;
     private DatabaseReference mDatabaseReference;
     private ChildEventListener mChildEventListener;
-    public static String nricLog;
+
+    // For NRIC
     MyNriceFile MyNricFile = new MyNriceFile();
+
     // For SensorService
     Intent mServiceIntent;
     private SensorService mSensorService;
@@ -74,8 +91,6 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.appointment);
-
-        nricLog = MyNricFile.getNric(this);
 
         progress = ProgressDialog.show(this, "Loading", "Please Wait A Moment", true);
 
@@ -86,6 +101,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
             startService(mServiceIntent);
         }
 
+        // For appointment check-in through notification
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             public void run() {
@@ -129,19 +145,21 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         if (isNetworkAvailable()) {
             Log.d(TAG, "Network is Available");
             //Initialize Firebase Database
-            patientAppointDB = FirebaseDatabase.getInstance().getReference().child("Patients").child(nricLog).child("Appointments");
-            patientDB = FirebaseDatabase.getInstance().getReference().child("Patients").child(nricLog).child("Details");
+            patientAppointDB = FirebaseDatabase.getInstance().getReference().child("Patients").child(MyNricFile.getNric(this)).child("Appointments");
+            patientDB = FirebaseDatabase.getInstance().getReference().child("Patients").child(MyNricFile.getNric(this)).child("Details");
             //Initialize Views
             mPatientName = (TextView) findViewById(R.id.patient_name);
+            mPatientHeader = (TextView) findViewById(R.id.patient_header);
             mAppointmentRecycler = (RecyclerView) findViewById(R.id.recycler_appointment);
             mAppointmentRecycler.setLayoutManager(new LinearLayoutManager(this));
 
-            //Initialize ValueEventListener
+            //Initialize ValueEventListener for patient
             ValueEventListener patientListener = new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
                     // Get Post object and use the values to update the UI
                     Patients patients = dataSnapshot.getValue(Patients.class);
+                    mPatientHeader.setText("Patient");
                     mPatientName.setText(patients.name);
                 }
 
@@ -155,11 +173,10 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                     // [END_EXCLUDE]
                 }
             };
-
             patientDB.addValueEventListener(patientListener);
-
             vPatientListener = patientListener;
 
+            // For appointment adapter
             mAdapter = new AppointmentAdapter(this, patientAppointDB);
             mAppointmentRecycler.setAdapter(mAdapter);
 
@@ -187,8 +204,6 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         if (vPatientListener != null) {
             patientDB.removeEventListener(vPatientListener);
         }
-
-        mAdapter.cleanupListener();
         finish();
     }
 
@@ -202,74 +217,127 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
     public void geoTrack(View view) {
 
         Log.e(TAG, view.getTag().toString());
-        Log.d(TAG, "It is " + String.valueOf(geofenceService.getInGeoGeoFence()));
+        Log.d(TAG, "It is " + String.valueOf(geofenceReceiver.getInGeoGeoFence()));
 
         final String firebaseButtonView;
+
+        // Retrieve related appointmentId
         firebaseButtonView = view.getTag().toString();
-//        mAppointments.get(firebaseButtonView)
+
+        // Retrieve position of appointment with relevant Id
         for (int i = 0; i < mAppointmentIds.size(); i++) {
             Log.e("mAppointmentIds", String.valueOf(mAppointmentIds.get(i)));
             if (mAppointmentIds.get(i).equals(firebaseButtonView)) {
                 mAppointmentIndex = mAppointmentIds.indexOf(mAppointmentIds.get(i));
-            } else {
-
             }
         }
-        if (mAppointments.get(mAppointmentIndex).getCheckin().equals("No")) {
-            if (geofenceService.getInGeoGeoFence()) {
-                new AlertDialog.Builder(this)
-                        .setTitle("Appointment")
-                        .setMessage("Would you like to check in your appointment?")
-                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                //Action
-                                patientAppointDB.child(firebaseButtonView).child("checkin").setValue("Yes");
-                                Intent inbroadcast = new Intent();
-                                inbroadcast.putExtra("Notification", mAppointmentIndex + 1000);
-                                inbroadcast.setAction("sg.edu.nyp.alexia.closeNotification");
-                                sendBroadcast(inbroadcast);
-                            }
-                        })
-                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                //Action
-                            }
-                        })
-                        .show();
 
+        // Time
+        Calendar c = Calendar.getInstance();
+        SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+        final String formattedDate = df.format(c.getTime());
+
+        if (mAppointments.get(mAppointmentIndex).getDate().equals(formattedDate)) {
+            if (mAppointments.get(mAppointmentIndex).getCheckin().equals("No")) {
+                try {
+                    // Time checker
+                    DateFormat appointTime = new SimpleDateFormat("hh.mm aa", Locale.ENGLISH);
+                    DateFormat sysTime = new SimpleDateFormat("hh.mm", Locale.ENGLISH);
+                    Calendar co = Calendar.getInstance();
+                    Date at = appointTime.parse(String.valueOf(mAppointments.get(mAppointmentIndex).getTime()));
+                    Date st = sysTime.parse(String.valueOf(co.get(Calendar.HOUR_OF_DAY) + "." + co.get(Calendar.MINUTE)));
+                    Log.e(TAG, "This" + String.valueOf((at.getTime() - st.getTime())/60/60/60/24));
+                    if ((at.getTime() - st.getTime())/60/60/60/24 < 1) {
+                        if (geofenceReceiver.getInGeoGeoFence()) {
+                            new AlertDialog.Builder(this)
+                                    .setTitle("Appointment")
+                                    .setMessage("Would you like to check in your appointment?")
+                                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            // Update firebase check-in field
+                                            patientAppointDB.child(firebaseButtonView).child("checkin").setValue("Yes");
+                                            // Broadcast to close related appointment notification
+                                            Intent inbroadcast = new Intent();
+                                            inbroadcast.putExtra("Notification", mAppointmentIndex + 1000);
+                                            inbroadcast.setAction("sg.edu.nyp.alexia.closeNotification");
+                                            sendBroadcast(inbroadcast);
+                                        }
+                                    })
+                                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            //Action
+                                        }
+                                    })
+                                    .show();
+                        } else {
+                            new AlertDialog.Builder(this)
+                                    .setTitle("Appointment")
+                                    .setMessage("You can only checkin when you're at NYP!")
+                                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            //Action
+                                        }
+                                    })
+                                    .show();
+                        }
+                    } else {
+                        new AlertDialog.Builder(this)
+                                .setTitle("Appointment")
+                                .setMessage("You can only checkin one hour before appointed time!")
+                                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        //Action
+                                    }
+                                })
+                                .show();
+                    }
+                } catch (ParseException error) {
+                    error.printStackTrace();
+                }
             } else {
-                new AlertDialog.Builder(this)
-                        .setTitle("Appointment")
-                        .setMessage("Please Get Closer!")
-                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                //Action
-                            }
-                        })
-                        .show();
+                // If checkin equals yes, calls routing to
+                // allow navigation to users designated
+                // room for consultation
+                Intent intent = new Intent(this, RoutingActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.putExtra("result", mAppointments.get(mAppointmentIndex).getRoom());
+                startActivity(intent);
             }
         } else {
-            Log.e(TAG, "CHECKED IN ALREADY LIEO LA");
-            Intent intent = new Intent(this, RoutingActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.putExtra("result", mAppointments.get(mAppointmentIndex).getRoom());
-            startActivity(intent);
+            new AlertDialog.Builder(this)
+                    .setTitle("Appointment")
+                    .setMessage("This is scheduled on " + mAppointments.get(mAppointmentIndex).getDate())
+                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            //Action
+                        }
+                    })
+                    .show();
         }
     }
 
+    // Check-in method from Notification
     public void geoTrackNoti(String index) {
+
+        // Get notification index
         final int appIndex = Integer.parseInt(index);
         final String appointIndex = mAppointmentIds.get(appIndex);
 
-        if (mAppointments.get(appIndex).getCheckin().equals("No")) {
-            if (geofenceService.getInGeoGeoFence()) {
+        // Time
+        Calendar c = Calendar.getInstance();
+        SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+        final String formattedDate = df.format(c.getTime());
+
+        if (mAppointments.get(mAppointmentIndex).getCheckin().equals("No") && mAppointments.get(mAppointmentIndex).getDate().equals(formattedDate)) {
+            if (geofenceReceiver.getInGeoGeoFence()) {
                 new AlertDialog.Builder(this)
                         .setTitle("Appointment")
                         .setMessage("Would you like to check in your appointment?")
                         .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
-                                //Action
+                                // Update firebase check-in field
                                 patientAppointDB.child(appointIndex).child("checkin").setValue("Yes");
+                                // Broadcast to close related appointment notification
                                 Intent inbroadcast = new Intent();
                                 inbroadcast.putExtra("Notification", appIndex + 1000);
                                 inbroadcast.setAction("sg.edu.nyp.alexia.closeNotification");
@@ -285,7 +353,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
             } else {
                 new AlertDialog.Builder(this)
                         .setTitle("Appointment")
-                        .setMessage("Please Get Closer!")
+                        .setMessage("You can only checkin when you're at NYP!")
                         .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
                                 //Action
@@ -296,6 +364,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         }
     }
 
+    // Pressing back with bring user to MainActivity
     @Override
     public void onBackPressed() {
         super.onBackPressed();
@@ -309,22 +378,19 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
 
     private static class AppointmentViewHolder extends RecyclerView.ViewHolder {
 
+        // Appointment View Holder
         private TextView field1View;
         private TextView field2View;
         private TextView field3View;
         private TextView detail1View;
         private TextView detail2View;
         private TextView detail3View;
-
-        //        private TextView roomView;
-//        private TextView timeView;
-//        private TextView typeView;
         private CardView checker;
 
         public AppointmentViewHolder(View itemView) {
             super(itemView);
 
-            field1View = (TextView) itemView.findViewById(R.id.appointment_field1);
+//            field1View = (TextView) itemView.findViewById(R.id.appointment_field1);
             field2View = (TextView) itemView.findViewById(R.id.appointment_field2);
             field3View = (TextView) itemView.findViewById(R.id.appointment_field3);
             detail1View = (TextView) itemView.findViewById(R.id.appointment_detail1);
@@ -332,7 +398,6 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
             detail3View = (TextView) itemView.findViewById(R.id.appointment_detail3);
             checker = (CardView) itemView.findViewById(R.id.card_view);
             progress.dismiss();
-
         }
     }
 
@@ -351,12 +416,10 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                     // A new Appointment has been added, add it to the displayed list
                     Appointments appointments = dataSnapshot.getValue(Appointments.class);
 
-                    // [START_EXCLUDE]
                     // Update RecyclerView
                     mAppointmentIds.add(dataSnapshot.getKey());
                     mAppointments.add(appointments);
                     notifyItemInserted(mAppointments.size() - 1);
-                    // [END_EXCLUDE]
 
                     Log.d(TAG, "DataSnapShot:" + mAppointmentIds);
                 }
@@ -370,18 +433,13 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                     Appointments newAppointments = dataSnapshot.getValue(Appointments.class);
                     String AppointmentsKey = dataSnapshot.getKey();
 
-                    // [START_EXCLUDE]
                     int appointmentsIndex = mAppointmentIds.indexOf(AppointmentsKey);
                     if (appointmentsIndex > -1) {
-                        // Replace with the new data
                         mAppointments.set(appointmentsIndex, newAppointments);
-
-                        // Update the RecyclerView
                         notifyItemChanged(appointmentsIndex);
                     } else {
                         Log.w(TAG, "onChildChanged:unknown_child:" + AppointmentsKey);
                     }
-                    // [END_EXCLUDE]
                 }
 
                 @Override
@@ -392,19 +450,15 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                     // appointment and if so remove it.
                     String AppointmentsKey = dataSnapshot.getKey();
 
-                    // [START_EXCLUDE]
                     int appointmentsIndex = mAppointmentIds.indexOf(AppointmentsKey);
                     if (appointmentsIndex > -1) {
                         // Remove data from the list
                         mAppointmentIds.remove(appointmentsIndex);
                         mAppointments.remove(appointmentsIndex);
-
-                        // Update the RecyclerView
                         notifyItemRemoved(appointmentsIndex);
                     } else {
                         Log.w(TAG, "onChildRemoved:unknown_child:" + appointmentsIndex);
                     }
-                    // [END_EXCLUDE]
                 }
 
                 @Override
@@ -415,8 +469,6 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                     // displaying this appointment and if so move it.
                     Appointments movedAppointments = dataSnapshot.getValue(Appointments.class);
                     String AppointmentsKey = dataSnapshot.getKey();
-
-                    // ...
                 }
 
                 @Override
@@ -426,9 +478,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                             Toast.LENGTH_SHORT).show();
                 }
             };
-
             ref.addChildEventListener(childEventListener);
-
             mChildEventListener = childEventListener;
         }
 
@@ -446,22 +496,20 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
 
             if (appointments.checkin.equals("No")) {
                 Log.e(TAG, "tell me" + appointments.checkin);
-                holder.field1View.setText(appointments.type);
+//                holder.field1View.setText(appointments.type);
                 holder.field2View.setText(appointments.date);
                 holder.field3View.setText(appointments.time);
-                holder.detail1View.setText("Appt. Type:");
+                holder.detail1View.setText(appointments.type);
                 holder.detail2View.setText("Appt. Date:");
                 holder.detail3View.setText("Appt. Time:");
             } else {
                 Log.e(TAG, "tell me" + appointments.checkin);
-                holder.field1View.setText(appointments.type);
+//                holder.field1View.setText(appointments.type);
                 holder.field2View.setText(appointments.doctor);
                 holder.field3View.setText(appointments.room);
-                holder.detail1View.setText("Appt. Type:");
+                holder.detail1View.setText(appointments.type);
                 holder.detail2View.setText("Appt. Doctor:");
                 holder.detail3View.setText("Appt. Room:");
-//                holder.checker.setClickable(false);
-//                holder.checker.setFocusable(false);
             }
         }
 
@@ -469,14 +517,9 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         public int getItemCount() {
             return mAppointments.size();
         }
-
-        public void cleanupListener() {
-            if (mChildEventListener != null) {
-                mDatabaseReference.removeEventListener(mChildEventListener);
-            }
-        }
     }
 
+    // Direction to NYP (How to get to place through Google Map for appointment)
     public void googMap(View view) {
         double destinationLatitude = 1.379268;
         double destinationLongitude = 103.849878;

@@ -63,10 +63,6 @@
         <!-- Services -->
         <service android:name="com.mapbox.mapboxsdk.telemetry.TelemetryService" />
         <service
-            android:name=".services.GeofenceService"
-            android:enabled="true"
-            android:exported="true" />
-        <service
             android:name=".services.SensorService"
             android:enabled="true" />
         <service
@@ -97,6 +93,7 @@
             android:label="AlarmManagerReceiver">
             <intent-filter>
                 <action android:name="sg.edu.nyp.alexia.AppRemindReceiver"/>
+                <action android:name="sg.edu.nyp.alexia.ShutGeoCheckin"/>
             </intent-filter>
         </receiver>
         <receiver
@@ -106,6 +103,15 @@
             <intent-filter>
                 <action android:name="sg.edu.nyp.alexia.closeNotification"/>
             </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".receivers.GeofenceReceiver"
+            android:enabled="true"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="sg.edu.nyp.alexia.GeofenceReceiver.ACTION_RECEIVE_GEOFENCE" />
+            </intent-filter>
+
         </receiver>
     </application>
 </manifest>

@@ -50,6 +50,7 @@ import com.graphhopper.util.Parameters;
 import com.graphhopper.util.PointList;
 import com.graphhopper.util.ProgressListener;
 import com.graphhopper.util.StopWatch;
+import com.mapbox.mapboxsdk.MapboxAccountManager;
 import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.Marker;
@@ -160,6 +161,8 @@ public class RoutingActivity extends Activity {
         nextButton = (Button) findViewById(R.id.next_button);
 
         drawerParams = drawerLayout.getLayoutParams();
+
+        MapboxAccountManager.start(this, getString(R.string.access_token));
 
         //initialize Tesseract API
         String language = "eng";

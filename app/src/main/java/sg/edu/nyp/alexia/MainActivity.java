@@ -28,7 +28,6 @@ import sg.edu.nyp.alexia.services.SensorService;
 public class MainActivity extends Activity {
     // For map download
     private String mapDownloadURL = "https://firebasestorage.googleapis.com/v0/b/mocktest-efa0d.appspot.com/o/singapore.zip?alt=media&token=1dcc196d-954f-4e8a-93c5-2101af28fcd8";
-
     private String targetFilePath = "/sdcard/Download/graphhopper/maps/";
 
     // For NRIC verification
@@ -42,22 +41,18 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        nricLog = MyNricFile.getNric(this);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        setContentView(R.layout.activity_main);
 
         // Initialize SensorService
         mSensorService = new SensorService(this);
         mServiceIntent = new Intent(this, mSensorService.getClass());
-        if (nricLog != null) {
+        if (MyNricFile.getNric(this) != null) {
             if (!isMyServiceRunning(mSensorService.getClass())) {
                 startService(mServiceIntent);
             }
         }
-
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        MapboxAccountManager.start(this, getString(R.string.access_token));
-        setContentView(R.layout.activity_main);
-
+        // Permission requests
         requestPermissions(new String[]{
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -86,17 +81,17 @@ public class MainActivity extends Activity {
         }
     }
 
-    // Destroy SensorService to ensure service reboot
     @Override
     protected void onDestroy() {
+        // Destroy SensorService to ensure service reboot
         stopService(mServiceIntent);
         Log.i("MAINACT", "onDestroy!");
         super.onDestroy();
-
     }
 
     @Override
     public void onBackPressed() {
+        // Exit Application to phone's homescreen
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_HOME);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -172,14 +167,14 @@ public class MainActivity extends Activity {
     }
 
     public void goToCheckIn(View view) {
-
+        // Check for location permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == -1){
             requestPermissions(new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION
             }, 1234);
         } else {
             // Check for stored NRIC under shared preferences
-            if (nricLog != null) {
+            if (MyNricFile.getNric(this) != null) {
                 Intent intent = new Intent(MainActivity.this, AppointmentChecker.class);
                 startActivity(intent);
             } else {

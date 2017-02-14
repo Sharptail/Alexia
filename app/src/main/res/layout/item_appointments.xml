@@ -15,7 +15,7 @@
         card_view:cardCornerRadius="4dp"
         card_view:cardElevation="4dp"
         card_view:cardUseCompatPadding="true"
-        card_view:contentPadding="10dp">
+        card_view:contentPadding="8dp">
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -41,7 +41,7 @@
 
                 <TextView
                     android:id="@+id/appointment_detail1"
-                    style="@style/TextAppearance.AppCompat.Medium"
+                    style="@style/TextAppearance.AppCompat.Large"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     tools:text="Appt. Type:" />
@@ -74,9 +74,10 @@
 
                 <TextView
                     android:id="@+id/appointment_field1"
-                    style="@style/TextAppearance.AppCompat.Medium"
+                    style="@style/TextAppearance.AppCompat.Large"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text=" "
                     tools:text="Appointment Field 1" />
 
                 <TextView

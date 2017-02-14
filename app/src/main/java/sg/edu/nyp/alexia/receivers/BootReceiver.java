@@ -12,6 +12,7 @@ import sg.edu.nyp.alexia.services.SensorService;
 public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
+        // Start SensorService on application boot
         context.startService(new Intent(context, SensorService.class));
     }
 }

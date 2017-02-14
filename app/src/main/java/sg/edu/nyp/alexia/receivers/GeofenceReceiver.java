@@ -1,6 +1,7 @@
-package sg.edu.nyp.alexia.services;
+package sg.edu.nyp.alexia.receivers;
 
-import android.app.IntentService;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
@@ -10,17 +11,17 @@ import com.google.android.gms.location.GeofencingEvent;
 import java.util.List;
 
 /**
- * Created by Spencer on 12/12/2016.
+ * Created by Spencer on 12/2/2017.
  */
 
-public class GeofenceService extends IntentService {
+public class GeofenceReceiver extends BroadcastReceiver{
+    public static final String TAG = "GeofenceReceiver";
 
-    public static final String TAG = "GeofenceService";
     // In Geofence Checker Variable
     private static boolean inGeoGeoFence = false;
 
-    public GeofenceService() {
-        super(TAG);
+    public GeofenceReceiver() {
+        super();
     }
 
     // In Geofence Checker Getter
@@ -33,37 +34,35 @@ public class GeofenceService extends IntentService {
         this.inGeoGeoFence = vGeo;
     }
 
-    @Override
-    public void onHandleIntent(Intent intent) {
+    public void onReceive(Context ctx, Intent intent) {
 
-        //Geofencing Event
+        Log.e(TAG, "Received!");
         GeofencingEvent event = GeofencingEvent.fromIntent(intent);
         if (event.hasError()) {
             Log.e("GEOFENCE SERVICE", "ERROR" + event.hasError());
         } else {
-
-            // Get Geofence Transition
             int transition = event.getGeofenceTransition();
             List<Geofence> geofences = event.getTriggeringGeofences();
             Geofence geofence = geofences.get(0);
             String requestId = geofence.getRequestId();
-
-            // If Geofence Transition = Enter, Set Geofence Checker To True. Else Geofence Checker is False
             if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
+                Log.d("GEOFENCE RECEIVER EVENT", "Received Enter");
                 Log.d(TAG, "Entering geofence - " + requestId);
                 setInGeoGeoFence(true);
                 Log.d(TAG, "Tell me " + String.valueOf(inGeoGeoFence));
+                // Broadcast to BackGeoReceiver in GeocheckinService
                 Intent inbroadcast = new Intent();
                 inbroadcast.setAction("sg.edu.nyp.alexia.enter");
-                sendBroadcast(inbroadcast);
-
+                ctx.sendBroadcast(inbroadcast);
             } else if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+                Log.d("GEOFENCE RECEIVER EVENT", "Received EXIT");
                 Log.d(TAG, "Exiting geofence - " + requestId);
                 setInGeoGeoFence(false);
                 Log.d(TAG, "Tell me " + String.valueOf(inGeoGeoFence));
+                // Broadcast to BackGeoReceiver in GeocheckinService
                 Intent exitbroadcast = new Intent();
                 exitbroadcast.setAction("sg.edu.nyp.alexia.exit");
-                sendBroadcast(exitbroadcast);
+                ctx.sendBroadcast(exitbroadcast);
             }
         }
     }

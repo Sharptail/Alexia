@@ -12,21 +12,17 @@ import android.util.Log;
 import sg.edu.nyp.alexia.checkin.OTPVerification;
 
 public class SmsReceiver extends BroadcastReceiver {
-
     private static final String TAG = SmsReceiver.class.getSimpleName();
 
-    public SmsReceiver() {
-    }
+    public SmsReceiver() {}
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        // TODO: This method is called when the BroadcastReceiver is receiving
-        // an Intent broadcast.
         final Bundle bundle = intent.getExtras();
         try {
             if (bundle != null) {
+                // Retrieve SMS Message
                 SmsMessage smsMessage;
-
                 if (Build.VERSION.SDK_INT >= 19) { //KITKAT
                     SmsMessage[] msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent);
                     smsMessage = msgs[0];
@@ -39,10 +35,11 @@ public class SmsReceiver extends BroadcastReceiver {
                 Log.e(TAG, message);
                 Log.e(TAG, senderNum);
                 try {
-                    if (senderNum.equals("+61448541925")) {
+                    if (senderNum.equals("+17328317176")) {
                         String code;
                         int index = message.indexOf(":");
                         if (index != -1) {
+                            // Pass OTP to received SMS
                             int start = index + 2;
                             int length = 6;
                             code = message.substring(start, start + length);
