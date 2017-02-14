@@ -7,6 +7,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -50,6 +51,7 @@ import sg.edu.nyp.alexia.model.Patients;
 import sg.edu.nyp.alexia.receivers.GeofenceReceiver;
 import sg.edu.nyp.alexia.services.SensorService;
 
+import static android.R.attr.checked;
 import static java.text.DateFormat.getDateTimeInstance;
 import static java.util.Date.parse;
 
@@ -390,7 +392,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         public AppointmentViewHolder(View itemView) {
             super(itemView);
 
-//            field1View = (TextView) itemView.findViewById(R.id.appointment_field1);
+            field1View = (TextView) itemView.findViewById(R.id.appointment_field1);
             field2View = (TextView) itemView.findViewById(R.id.appointment_field2);
             field3View = (TextView) itemView.findViewById(R.id.appointment_field3);
             detail1View = (TextView) itemView.findViewById(R.id.appointment_detail1);
@@ -491,20 +493,35 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
 
         @Override
         public void onBindViewHolder(AppointmentViewHolder holder, int position) {
+
+            // Time
+            Calendar c = Calendar.getInstance();
+            SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+            final String formattedDate = df.format(c.getTime());
+
             Appointments appointments = mAppointments.get(position);
             holder.checker.setTag(mAppointmentIds.get(position));
 
             if (appointments.checkin.equals("No")) {
-                Log.e(TAG, "tell me" + appointments.checkin);
-//                holder.field1View.setText(appointments.type);
-                holder.field2View.setText(appointments.date);
-                holder.field3View.setText(appointments.time);
-                holder.detail1View.setText(appointments.type);
-                holder.detail2View.setText("Appt. Date:");
-                holder.detail3View.setText("Appt. Time:");
+                if (appointments.date.equals(formattedDate)) {
+                    holder.field1View.setText("\u26A0");
+                    holder.field1View.setTextColor(Color.parseColor("#B33A3A"));
+                    holder.field2View.setText(appointments.date);
+                    holder.field3View.setText(appointments.time);
+                    holder.detail1View.setText(appointments.type);
+                    holder.detail2View.setText("Appt. Date:");
+                    holder.detail3View.setText("Appt. Time:");
+                } else {
+                    holder.field2View.setText(appointments.date);
+                    holder.field3View.setText(appointments.time);
+                    holder.detail1View.setText(appointments.type);
+                    holder.detail2View.setText("Appt. Date:");
+                    holder.detail3View.setText("Appt. Time:");
+                }
             } else {
                 Log.e(TAG, "tell me" + appointments.checkin);
-//                holder.field1View.setText(appointments.type);
+                holder.field1View.setText("\u2713");
+                holder.field1View.setTextColor(Color.parseColor("#32CD32"));
                 holder.field2View.setText(appointments.doctor);
                 holder.field3View.setText(appointments.room);
                 holder.detail1View.setText(appointments.type);
