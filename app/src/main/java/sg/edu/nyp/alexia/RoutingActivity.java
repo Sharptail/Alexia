@@ -35,6 +35,9 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.github.amlcurran.showcaseview.ShowcaseView;
+import com.github.amlcurran.showcaseview.targets.Target;
+import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -133,6 +136,7 @@ public class RoutingActivity extends Activity {
     private CameraPosition newCameraPos;
     private Button startButton;
     private Button nextButton;
+    private ShowcaseView sv;
 
     @Override
     protected void onStart() {
@@ -393,6 +397,19 @@ public class RoutingActivity extends Activity {
             }
         }, 5000);
 
+        RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        Target viewTarget = new ViewTarget(R.id.qr_scanner_button, this);
+        sv = new ShowcaseView.Builder(this)
+                .setTarget(viewTarget)
+                .setContentTitle("Position Scanner")
+                .setContentText("Scan nearby QR Code to indicate your current position")
+                .setStyle(R.style.CustomShowcaseTheme2)
+                .hideOnTouchOutside()
+                .replaceEndButton(R.layout.gotit_custom_button)
+                .build();
+        sv.setButtonPosition(lps);
     }
 
     @Override
