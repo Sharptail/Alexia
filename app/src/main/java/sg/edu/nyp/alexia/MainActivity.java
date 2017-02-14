@@ -10,11 +10,14 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
+import android.widget.Toast;
 
 import com.mapbox.mapboxsdk.MapboxAccountManager;
 
@@ -27,9 +30,10 @@ import sg.edu.nyp.alexia.services.SensorService;
 
 public class MainActivity extends Activity {
     // For map download
-    private String mapDownloadURL = "https://firebasestorage.googleapis.com/v0/b/mocktest-efa0d.appspot.com/o/singapore.zip?alt=media&token=1dcc196d-954f-4e8a-93c5-2101af28fcd8";
+    private String mapDownloadURL = "https://firebasestorage.googleapis.com/v0/b/mocktest-efa0d.appspot.com/o/singapore.zip?alt=media&token=9bf94819-10b1-4bbd-91bd-eba2c372b70e";
 
     private String targetFilePath = "/sdcard/Download/graphhopper/maps/";
+    private File mapsFolder;
 
     // For NRIC verification
     public static String nricLog;
@@ -73,6 +77,23 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
+
+        // Jian Wei - set graphhopper maps' folder
+        boolean greaterOrEqKitkat = Build.VERSION.SDK_INT >= 19;
+        if (greaterOrEqKitkat) {
+            if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+                logUser("GraphHopper is not usable without an external storage!");
+                return;
+            }
+            mapsFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                    "/graphhopper/maps/");
+        } else
+            mapsFolder = new File(Environment.getExternalStorageDirectory(), "/graphhopper/maps/");
+
+        if (!mapsFolder.exists()) {
+            mapsFolder.mkdirs();
+        }
+
         if (isNetworkAvailable()) {
             if (new File(targetFilePath + getString(R.string.map_file_name)).exists() == false) {
                 if (new File(targetFilePath + getString(R.string.map_file_name) + ".zip").exists() == false) {
@@ -187,5 +208,19 @@ public class MainActivity extends Activity {
                 startActivity(intent);
             }
         }
+    }
+
+    // Jian Wei - is to Log a string and Toast at the same time for easier debugging
+    private void log(String str) {
+        Log.e("GH", str);
+    }
+
+    private void log(String str, Throwable t) {
+        Log.e("GH", str, t);
+    }
+
+    private void logUser(String str) {
+        log(str);
+        Toast.makeText(this, str, Toast.LENGTH_SHORT).show();
     }
 }

@@ -50,6 +50,7 @@ import com.graphhopper.util.Parameters;
 import com.graphhopper.util.PointList;
 import com.graphhopper.util.ProgressListener;
 import com.graphhopper.util.StopWatch;
+import com.mapbox.mapboxsdk.MapboxAccountManager;
 import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.Marker;
@@ -103,6 +104,7 @@ public class RoutingActivity extends Activity {
     private volatile boolean shortestPathRunning = false;
     private Integer selectedLocationIndex = 0;
     private ArrayList<Room> roomList = new ArrayList<>();
+    private ArrayList<Room> filteredRoomList = new ArrayList<>();
     private ArrayList<ATM> atmList = new ArrayList<>();
     private ArrayList<Elevator> elevatorList = new ArrayList<>();
     private List<LatLng> calculatedPoints = new ArrayList<>();
@@ -115,6 +117,7 @@ public class RoutingActivity extends Activity {
     private int currentLevel = 3;
     private LatLng stairsPoint = new LatLng(1.3792667, 103.8495746);
     private ListView roomListView;
+    private RoomAdapter roomAdapter;
     private SearchView roomSearchView;
     private ListView nearbyListView;
     private SearchView nearbySearchView;
@@ -140,6 +143,7 @@ public class RoutingActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState)  {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
+        MapboxAccountManager.start(this, getString(R.string.access_token));
         setContentView(R.layout.activity_routing);
 
         appDrawer = new AppDrawer(this);
@@ -213,8 +217,8 @@ public class RoutingActivity extends Activity {
                 //String [] destination_location = {"Big Room", "Last Room"};
                 //final String [] destination_coords = {"1.379166419501388,103.84994486842379","1.3790777965512575,103.84973653167629"};
 
-                final RoomAdapter adapter = new RoomAdapter(RoutingActivity.this, roomList);
-                roomListView.setAdapter(adapter);
+                roomAdapter = new RoomAdapter(RoutingActivity.this, roomList);
+                roomListView.setAdapter(roomAdapter);
 
                 roomSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                     @Override
@@ -226,7 +230,7 @@ public class RoutingActivity extends Activity {
                     @Override
                     public boolean onQueryTextChange(String query) {
                         // TODO Auto-generated method stub
-                        adapter.getFilter().filter(query);
+                        roomAdapter.getFilter().filter(query);
                         return false;
                     }
                 });
@@ -350,10 +354,13 @@ public class RoutingActivity extends Activity {
                     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                         appDrawer.switchDrawer(2);
                         selectedLocationIndex = i;
-                        if(roomList.get(selectedLocationIndex).getLevel() == currentLevel){
-                            String [] coords = destination_coords.get(selectedLocationIndex).split(",");
-                            Double lat = Double.parseDouble(coords[0]);
-                            Double lng = Double.parseDouble(coords[1]);
+                        filteredRoomList = roomAdapter.getFilteredRooms();
+                        if(filteredRoomList.get(selectedLocationIndex).getLevel() == currentLevel){
+//                            String [] coords = destination_coords.get(selectedLocationIndex).split(",");
+//                            Double lat = Double.parseDouble(coords[0]);
+//                            Double lng = Double.parseDouble(coords[1]);
+                            Double lat = filteredRoomList.get(selectedLocationIndex).getLat();
+                            Double lng = filteredRoomList.get(selectedLocationIndex).getLng();
                             LatLng point = new LatLng(lat,lng);
                             end = point;
 
@@ -364,7 +371,7 @@ public class RoutingActivity extends Activity {
                             calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
                                     end.getLongitude(),mapboxMap);
                         }else{
-                            appDrawer.switchDrawer(4);
+                            appDrawer.switchDrawer(5);
                         }
                     }
                 });
@@ -656,7 +663,7 @@ public class RoutingActivity extends Activity {
                                 .newCameraPosition(position), 2000);
 
                         if(isEndFirst == false){
-                            appDrawer.switchDrawer(1);
+                            appDrawer.switchDrawer(3);
                         }else if(end != null){
                             appDrawer.switchDrawer(2);
                             // Calculate Shortest Path
@@ -897,13 +904,9 @@ public class RoutingActivity extends Activity {
                 } else {
                     if (end == stairsPoint || end == preferredElevatorPoint) {
                         // Change to current level
-                        currentLevel = roomList.get(selectedLocationIndex).getLevel();
-
-                        if (currentLevel == 4) {
-                            mapboxMap.setStyleUrl(getString(R.string.mapbox_url2));
-                            currentArea = "singapore72";
-                            loadGraphStorage();
-                        }
+                        filteredRoomList = roomAdapter.getFilteredRooms();
+                        switchLayers(filteredRoomList.get(selectedLocationIndex).getLevel());
+                        currentLevel = filteredRoomList.get(selectedLocationIndex).getLevel();
 
                         mapboxMap.clear();
                         userCurrentPos = 0;
@@ -914,9 +917,8 @@ public class RoutingActivity extends Activity {
                         }
                         // Add the marker to the map
                         startMarker = mapboxMap.addMarker(createMarkerItem(start, R.drawable.start, "You Are Here!", ""));
-                        String[] coords = destination_coords.get(selectedLocationIndex).split(",");
-                        Double lat = Double.parseDouble(coords[0]);
-                        Double lng = Double.parseDouble(coords[1]);
+                        Double lat = filteredRoomList.get(selectedLocationIndex).getLat();
+                        Double lng = filteredRoomList.get(selectedLocationIndex).getLng();
                         LatLng point = new LatLng(lat, lng);
                         end = point;
 
@@ -968,7 +970,7 @@ public class RoutingActivity extends Activity {
     }
 
     public void goToNearby(View view){
-        appDrawer.switchDrawer(3);
+        appDrawer.switchDrawer(4);
 
         ArrayList<Nearby> nearbies = new ArrayList<>();
         nearbies.add(new Nearby("ATM",R.drawable.atm));
@@ -1164,9 +1166,11 @@ public class RoutingActivity extends Activity {
                             .tilt(60)
                             .bearing(bearing)
                             .build(); // Creates a CameraPosition from the builder
-                    resetMapView();
-                    startButton.setVisibility(View.VISIBLE);
-                    nextButton.setVisibility(View.GONE);
+                    if(start != stairsPoint && start != preferredElevatorPoint){
+                        resetMapView();
+                        startButton.setVisibility(View.VISIBLE);
+                        nextButton.setVisibility(View.GONE);
+                    }
                     startMarker.hideInfoWindow();
                 } else {
                     logUser("Error:" + resp.getErrors());
@@ -1320,9 +1324,8 @@ public class RoutingActivity extends Activity {
             public void onMapReady(MapboxMap mapboxMap) {
                 mapboxMap.clear();
                 if (roomList.get(selectedLocationIndex).getLevel() == currentLevel) {
-                    String[] coords = destination_coords.get(selectedLocationIndex).split(",");
-                    Double lat = Double.parseDouble(coords[0]);
-                    Double lng = Double.parseDouble(coords[1]);
+                    Double lat = roomList.get(selectedLocationIndex).getLat();
+                    Double lng = roomList.get(selectedLocationIndex).getLng();
                     LatLng point = new LatLng(lat, lng);
                     end = point;
 

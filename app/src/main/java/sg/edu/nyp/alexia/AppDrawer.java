@@ -219,15 +219,15 @@ class AppDrawer {
     private void refreshData(int currentDrawer){
         switch (currentDrawer) {
             case 1: // Drawer 1
-                color = R.color.color_1;
-                first_layout.setVisibility(View.GONE);
+                color = R.color.white;
+                first_layout.setVisibility(View.VISIBLE);
                 second_layout.setVisibility(View.GONE);
-                third_layout.setVisibility(View.VISIBLE);
+                third_layout.setVisibility(View.GONE);
                 fourth_layout.setVisibility(View.GONE);
                 fifth_layout.setVisibility(View.GONE);
                 break;
             case 2: // Drawer 2
-                color = R.color.color_2;
+                color = R.color.color_1;
                 first_layout.setVisibility(View.GONE);
                 second_layout.setVisibility(View.VISIBLE);
                 third_layout.setVisibility(View.GONE);
@@ -235,6 +235,14 @@ class AppDrawer {
                 fifth_layout.setVisibility(View.GONE);
                 break;
             case 3: // Drawer 3
+                color = R.color.color_2;
+                first_layout.setVisibility(View.GONE);
+                second_layout.setVisibility(View.GONE);
+                third_layout.setVisibility(View.VISIBLE);
+                fourth_layout.setVisibility(View.GONE);
+                fifth_layout.setVisibility(View.GONE);
+                break;
+            case 4: // Drawer 4
                 color = R.color.color_3;
                 first_layout.setVisibility(View.GONE);
                 second_layout.setVisibility(View.GONE);
@@ -242,7 +250,7 @@ class AppDrawer {
                 fourth_layout.setVisibility(View.VISIBLE);
                 fifth_layout.setVisibility(View.GONE);
                 break;
-            case 4: // Drawer 3
+            case 5: // Drawer 5
                 color = R.color.color_4;
                 first_layout.setVisibility(View.GONE);
                 second_layout.setVisibility(View.GONE);

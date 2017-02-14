@@ -61,6 +61,10 @@ import sg.edu.nyp.alexia.R;
         return view;
     }
 
+    public ArrayList<Room> getFilteredRooms(){
+        return rooms;
+    }
+
     @Override
     public Filter getFilter() {
         if(filter == null)
