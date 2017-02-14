@@ -27,35 +27,36 @@
                 android:layout_height="72dp"
                 android:layout_centerVertical="true"
                 android:layout_alignParentLeft="true"
+                android:layout_marginLeft="8dp"
                 android:src="@drawable/appicon" />
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="90dp"
                 android:id="@+id/appoint_detail_holder"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
-                android:layout_marginLeft="16dp"
+                android:layout_marginLeft="24dp"
                 android:layout_toEndOf="@id/appointment_image"
                 android:orientation="vertical"
                 android:padding="2dp">
 
                 <TextView
                     android:id="@+id/appointment_detail1"
-                    style="@style/TextAppearance.AppCompat.Large"
+                    style="@style/TextAppearance.AppCompat.Headline"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     tools:text="Appt. Type:" />
 
                 <TextView
                     android:id="@+id/appointment_detail2"
-                    style="@style/TextAppearance.AppCompat.Medium"
+                    style="@style/TextAppearance.AppCompat.Body2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     tools:text="Appt. Date:" />
 
                 <TextView
                     android:id="@+id/appointment_detail3"
-                    style="@style/TextAppearance.AppCompat.Medium"
+                    style="@style/TextAppearance.AppCompat.Body2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     tools:text="Appt. Time:" />
@@ -74,7 +75,7 @@
 
                 <TextView
                     android:id="@+id/appointment_field1"
-                    style="@style/TextAppearance.AppCompat.Large"
+                    style="@style/TextAppearance.AppCompat.Headline"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text=" "
@@ -82,14 +83,14 @@
 
                 <TextView
                     android:id="@+id/appointment_field2"
-                    style="@style/TextAppearance.AppCompat.Medium"
+                    style="@style/TextAppearance.AppCompat.Body2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     tools:text="Appointment Field 2" />
 
                 <TextView
                     android:id="@+id/appointment_field3"
-                    style="@style/TextAppearance.AppCompat.Medium"
+                    style="@style/TextAppearance.AppCompat.Body2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     tools:text="Appointment Field 3" />

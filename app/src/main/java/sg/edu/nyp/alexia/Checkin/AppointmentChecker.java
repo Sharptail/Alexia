@@ -21,9 +21,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.github.amlcurran.showcaseview.ShowcaseView;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -32,7 +34,6 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.io.Serializable;
-import java.sql.Time;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -50,10 +51,6 @@ import sg.edu.nyp.alexia.model.MyNriceFile;
 import sg.edu.nyp.alexia.model.Patients;
 import sg.edu.nyp.alexia.receivers.GeofenceReceiver;
 import sg.edu.nyp.alexia.services.SensorService;
-
-import static android.R.attr.checked;
-import static java.text.DateFormat.getDateTimeInstance;
-import static java.util.Date.parse;
 
 public class AppointmentChecker extends AppCompatActivity implements Serializable{
     private static final String TAG = "AppointmentChecker";
@@ -81,6 +78,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
     private Context mContext;
     private DatabaseReference mDatabaseReference;
     private ChildEventListener mChildEventListener;
+    private ShowcaseView sv;
 
     // For NRIC
     MyNriceFile MyNricFile = new MyNriceFile();
@@ -93,8 +91,6 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.appointment);
-
-        progress = ProgressDialog.show(this, "Loading", "Please Wait A Moment", true);
 
         // Initialize SensorService
         mSensorService = new SensorService(this);
@@ -115,6 +111,24 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                 }
             }
         }, 3000);
+
+        RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        sv = new ShowcaseView.Builder(this)
+                .setContentTitle("Appointment Check-in")
+                .setContentText("Tap on the your appointment to check-in.\n\n" +
+                        "For appointment that has been checked-in, a \u2713 will be marked.\n\n" +
+                        "For appointment that is appointed today, a \u2691 will be marked.\n\n" +
+                        "\n" +
+                        "TAKE NOTE:\n You can only check-in one hour before the appointment time on the appointed date at the destination")
+                .setStyle(R.style.CustomShowcaseTheme2)
+                .hideOnTouchOutside()
+                .replaceEndButton(R.layout.gotit_custom_button)
+                .build();
+        sv.setButtonPosition(lps);
+
+        progress = ProgressDialog.show(this, "Loading", "Please Wait A Moment", true);
     }
 
     //Check if SensorService is running
@@ -504,19 +518,19 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
 
             if (appointments.checkin.equals("No")) {
                 if (appointments.date.equals(formattedDate)) {
-                    holder.field1View.setText("\u26A0");
+                    holder.field1View.setText("\u2691");
                     holder.field1View.setTextColor(Color.parseColor("#B33A3A"));
                     holder.field2View.setText(appointments.date);
                     holder.field3View.setText(appointments.time);
                     holder.detail1View.setText(appointments.type);
-                    holder.detail2View.setText("Appt. Date:");
-                    holder.detail3View.setText("Appt. Time:");
+                    holder.detail2View.setText("Date:");
+                    holder.detail3View.setText("Time:");
                 } else {
                     holder.field2View.setText(appointments.date);
                     holder.field3View.setText(appointments.time);
                     holder.detail1View.setText(appointments.type);
-                    holder.detail2View.setText("Appt. Date:");
-                    holder.detail3View.setText("Appt. Time:");
+                    holder.detail2View.setText("Date:");
+                    holder.detail3View.setText("Time:");
                 }
             } else {
                 Log.e(TAG, "tell me" + appointments.checkin);
@@ -525,8 +539,8 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                 holder.field2View.setText(appointments.doctor);
                 holder.field3View.setText(appointments.room);
                 holder.detail1View.setText(appointments.type);
-                holder.detail2View.setText("Appt. Doctor:");
-                holder.detail3View.setText("Appt. Room:");
+                holder.detail2View.setText("Doctor:");
+                holder.detail3View.setText("Room:");
             }
         }
 
