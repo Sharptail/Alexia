@@ -122,6 +122,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
             }
         }, 3000);
 
+        // Launch help info on app's first launch
         if (myHelpInfo.getHelp(this) == null) {
             helpInfo();
         }
@@ -129,6 +130,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         progress = ProgressDialog.show(this, "Loading", "Please Wait A Moment", true);
     }
 
+    // Inflate app bar with appoint menu (Contains help button)
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -136,6 +138,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         return true;
     }
 
+    // Listen for menu's item selection
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
@@ -148,6 +151,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         }
     }
 
+    // Generate help info
     private void helpInfo() {
         RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -158,7 +162,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                         "You will see a \u2713 upon successful check-in.\n\n" +
                         "You will see a \u2691 for today's appointment.\n\n" +
                         "\n" +
-                        "TAKE NOTE\nCheck-in can only be done when:\n\u00B7 You have arrived at the at the Hospital\n\u00B7 At most one hour before your appointment")
+                        "TAKE NOTE\nCheck-in can only be done:\n\u00B7 When you have arrived at the Hospital\n\u00B7 At most one hour before your appointment")
                 .setStyle(R.style.CustomShowcaseTheme2)
                 .hideOnTouchOutside()
                 .replaceEndButton(R.layout.gotit_custom_button)
@@ -217,14 +221,14 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
 
                 @Override
                 public void onCancelled(DatabaseError databaseError) {
-                    // Getting Post failed, log a message
+                    // Getting appointment failed, log a message
                     Log.w(TAG, "loadAppointment:onCancelled", databaseError.toException());
-                    // [START_EXCLUDE]
                     Toast.makeText(AppointmentChecker.this, "Failed to load appointment.",
                             Toast.LENGTH_SHORT).show();
-                    // [END_EXCLUDE]
                 }
             };
+
+            // Attach listener to database reference
             patientDB.addValueEventListener(patientListener);
             vPatientListener = patientListener;
 
@@ -252,7 +256,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         Log.d(TAG, "onStop Called");
         super.onStop();
 
-        // Remove Firebase Database Listener
+        // Remove firebase database listener
         if (vPatientListener != null) {
             patientDB.removeEventListener(vPatientListener);
         }
@@ -284,22 +288,26 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
             }
         }
 
-        // Time
+        // Get today's date
         Calendar c = Calendar.getInstance();
         SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
         final String formattedDate = df.format(c.getTime());
 
+        // Check if selected appointment is scheduled for today
         if (mAppointments.get(mAppointmentIndex).getDate().equals(formattedDate)) {
+            // Then check if selected appointment has been checked-in
             if (mAppointments.get(mAppointmentIndex).getCheckin().equals("No")) {
                 try {
-                    // Time checker
+                    // Get appointment time and current time for difference comparison
                     DateFormat appointTime = new SimpleDateFormat("hh.mm aa", Locale.ENGLISH);
                     DateFormat sysTime = new SimpleDateFormat("hh.mm", Locale.ENGLISH);
                     Calendar co = Calendar.getInstance();
                     Date at = appointTime.parse(String.valueOf(mAppointments.get(mAppointmentIndex).getTime()));
                     Date st = sysTime.parse(String.valueOf(co.get(Calendar.HOUR_OF_DAY) + "." + co.get(Calendar.MINUTE)));
                     Log.e(TAG, "This" + String.valueOf((at.getTime() - st.getTime())/60/60/60/24));
+                    // Then check if time difference is below 1 hour
                     if ((at.getTime() - st.getTime())/60/60/60/24 < 1) {
+                        // Then check if user is inside Geofence area
                         if (geofenceReceiver.getInGeoGeoFence()) {
                             new AlertDialog.Builder(this)
                                     .setTitle("Appointment")
@@ -322,9 +330,10 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                                     })
                                     .show();
                         } else {
+                            // Tell user to check-in when they reached
                             new AlertDialog.Builder(this)
                                     .setTitle("Appointment")
-                                    .setMessage("You can only checkin when you're at NYP!")
+                                    .setMessage("You can only checkin when you're at the Hospital!")
                                     .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                                         public void onClick(DialogInterface dialog, int which) {
                                             //Action
@@ -333,6 +342,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                                     .show();
                         }
                     } else {
+                        // Tell user to check-in later
                         new AlertDialog.Builder(this)
                                 .setTitle("Appointment")
                                 .setMessage("You can only checkin one hour before appointed time!")
