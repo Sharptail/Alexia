@@ -188,13 +188,16 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
     private void helpInfo() {
         RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        lps.setMargins(0, 0, 24, 24);
         sv = new ShowcaseView.Builder(this)
-                .setContentTitle("Appointment Check-in")
-                .setContentText("Tap on your appointment to check-in.\n\n" +
-                        "You will see a \u2713 upon successful check-in.\n\n" +
-                        "You will see a \u2691 for today's appointment.\n\n" +
-                        "\n" +
+                .setContentTitle("Appointment")
+                .setContentText("\nTap the + sign to book appointment\n" +
+                        "Swipe right on appointment to reschedule\n" +
+                        "Swipe left on appointment to cancel\n\n\n" +
+                        "Tap on your appointment to check-in\n" +
+                        "You will see a \u2713 upon successful check-in\n" +
+                        "You will see a \u2691 for today's appointment\n\n" +
                         "TAKE NOTE\nCheck-in can only be done:\n\u00B7 When you have arrived at the Hospital\n\u00B7 At most one hour before your appointment")
                 .setStyle(R.style.CustomShowcaseTheme2)
                 .hideOnTouchOutside()
@@ -559,9 +562,6 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
     public class CustomOnItemSelectedListener implements AdapterView.OnItemSelectedListener {
 
         public void onItemSelected(AdapterView<?> parent, View view, int pos,long id) {
-            Toast.makeText(parent.getContext(),
-                    "OnItemSelectedListener : " + parent.getItemAtPosition(pos).toString(),
-                    Toast.LENGTH_SHORT).show();
             mTimeslotTime.clear();
             mTimeslotTime.add(mTimeslot.get(pos).slot1);
             mTimeslotTime.add(mTimeslot.get(pos).slot2);
