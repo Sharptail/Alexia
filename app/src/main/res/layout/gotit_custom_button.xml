@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Button xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/gotit_button"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:text="Got it"
-    android:textStyle="bold"
     android:textSize="13sp"
     android:textAllCaps="true"
     android:textColor="@android:color/black"

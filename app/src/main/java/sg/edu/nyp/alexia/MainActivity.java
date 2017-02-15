@@ -19,8 +19,6 @@ import android.view.View;
 import android.view.Window;
 import android.widget.Toast;
 
-import com.mapbox.mapboxsdk.MapboxAccountManager;
-
 import java.io.File;
 
 import sg.edu.nyp.alexia.checkin.AppointmentChecker;
