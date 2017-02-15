@@ -7,7 +7,12 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -18,13 +23,17 @@ import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.RelativeLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -53,8 +62,14 @@ import sg.edu.nyp.alexia.model.Appointments;
 import sg.edu.nyp.alexia.model.HelpInfo;
 import sg.edu.nyp.alexia.model.MyNriceFile;
 import sg.edu.nyp.alexia.model.Patients;
+import sg.edu.nyp.alexia.model.Timeslot;
 import sg.edu.nyp.alexia.receivers.GeofenceReceiver;
 import sg.edu.nyp.alexia.services.SensorService;
+
+import static sg.edu.nyp.alexia.R.id.appoint_detail_holder;
+import static sg.edu.nyp.alexia.R.id.dateSpinner;
+import static sg.edu.nyp.alexia.R.id.timeSpinner;
+import static sg.edu.nyp.alexia.R.id.typeSpinner;
 
 public class AppointmentChecker extends AppCompatActivity implements Serializable {
     private static final String TAG = "AppointmentChecker";
@@ -71,9 +86,11 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
     private AppointmentAdapter mAdapter;
 
     // Firebase Database Reference
+    private DatabaseReference timeslotDB;
     private DatabaseReference patientDB;
     private DatabaseReference patientAppointDB;
     private ValueEventListener vPatientListener;
+    private ChildEventListener vTimeslotListener;
 
     // Define Views
     private TextView mPatientName;
@@ -93,6 +110,15 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
     // For SensorService
     Intent mServiceIntent;
     private SensorService mSensorService;
+
+    // For Appointment Booking
+    private Spinner dateSpinner, timeSpinner, typeSpinner;
+    private List<Timeslot> mTimeslot = new ArrayList<>();
+    private List<String> mTimeslotID = new ArrayList<>();
+    private List<String> mTimeslotTime = new ArrayList<>();
+    private List<String> mTimeslotDate = new ArrayList<>();
+    ArrayAdapter<String> dataAdapter;
+    ArrayAdapter<String> timeAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,6 +152,13 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         if (myHelpInfo.getHelp(this) == null) {
             helpInfo();
         }
+
+        Handler viewHandler = new Handler();
+        handler.postDelayed(new Runnable() {
+            public void run() {
+                initSwipe();
+            }
+        }, 3000);
 
         progress = ProgressDialog.show(this, "Loading", "Please Wait A Moment", true);
     }
@@ -200,7 +233,8 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         //If Network Is Available
         if (isNetworkAvailable()) {
             Log.d(TAG, "Network is Available");
-            //Initialize Firebase Database
+            // Initialize Firebase Database
+            timeslotDB = FirebaseDatabase.getInstance().getReference().child("Timeslot");
             patientAppointDB = FirebaseDatabase.getInstance().getReference().child("Patients").child(MyNricFile.getNric(this)).child("Appointments");
             patientDB = FirebaseDatabase.getInstance().getReference().child("Patients").child(MyNricFile.getNric(this)).child("Details");
             //Initialize Views
@@ -259,6 +293,9 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         // Remove firebase database listener
         if (vPatientListener != null) {
             patientDB.removeEventListener(vPatientListener);
+        }
+        if (vTimeslotListener != null) {
+            timeslotDB.removeEventListener(vTimeslotListener);
         }
         finish();
     }
@@ -426,12 +463,116 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         }
     }
 
+    // Add appointment method
+    public void addAppoint(View view) {
+        // Layout inflater
+        LayoutInflater inflater = getLayoutInflater();
+        View dialoglayout = inflater.inflate(R.layout.book_dialog, null);
+        android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(AppointmentChecker.this);
+        builder.setTitle("Appointment Booking");
+        builder.setView(dialoglayout);
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+                String sd = dateSpinner.getSelectedItem().toString();
+                String sc = timeSpinner.getSelectedItem().toString();
+                String st = typeSpinner.getSelectedItem().toString();
+                String c = "No";
+                String d = "TBC";
+                String r = "TBC";
+
+                Appointments appointment = new Appointments(sd, sc, st, c, d, r);
+                DatabaseReference newRef = patientAppointDB.push();
+                newRef.setValue(appointment);
+                mTimeslotDate.clear();
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+                mTimeslotDate.clear();
+            }
+        });
+        builder.show();
+
+        // Date Spinner
+        dateSpinner = (Spinner) dialoglayout.findViewById(R.id.dateSpinner);
+        dataAdapter = new ArrayAdapter<String>(AppointmentChecker.this, android.R.layout.simple_spinner_item, mTimeslotDate);
+        dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        dateSpinner.setAdapter(dataAdapter);
+        dateSpinner.setOnItemSelectedListener(new CustomOnItemSelectedListener());
+
+        // Time Spinner
+        timeSpinner = (Spinner) dialoglayout.findViewById(R.id.timeSpinner);
+        timeAdapter = new ArrayAdapter<String>(AppointmentChecker.this, android.R.layout.simple_spinner_item, mTimeslotTime);
+        timeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        timeSpinner.setAdapter(timeAdapter);
+
+        // Type Spinner
+        typeSpinner = (Spinner) dialoglayout.findViewById(R.id.typeSpinner);
+
+        //Initialize ChildEventListener for timeslot
+        ChildEventListener timeslotListener = new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
+                // Get Post object and use the values to update the UI
+                Timeslot timeslot = dataSnapshot.getValue(Timeslot.class);
+                mTimeslot.add(timeslot);
+                mTimeslotDate.add(timeslot.date);
+                Log.e("Timeslot Available", "Testing" + mTimeslotDate);
+                Log.e("Timeslot Date:", "Testing" + timeslot.date);
+                dataAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {
+                // Getting appointment failed, log a message
+                Toast.makeText(AppointmentChecker.this, "Failed to load appointment.",
+                        Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {}
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {}
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {}
+        };
+
+        // Attach listener to database reference
+        timeslotDB.addChildEventListener(timeslotListener);
+        vTimeslotListener = timeslotListener;
+    }
+
     // Pressing back with bring user to MainActivity
     @Override
     public void onBackPressed() {
         super.onBackPressed();
         startActivity(new Intent(AppointmentChecker.this, MainActivity.class));
         finish();
+    }
+
+    public class CustomOnItemSelectedListener implements AdapterView.OnItemSelectedListener {
+
+        public void onItemSelected(AdapterView<?> parent, View view, int pos,long id) {
+            Toast.makeText(parent.getContext(),
+                    "OnItemSelectedListener : " + parent.getItemAtPosition(pos).toString(),
+                    Toast.LENGTH_SHORT).show();
+            mTimeslotTime.clear();
+            mTimeslotTime.add(mTimeslot.get(pos).slot1);
+            mTimeslotTime.add(mTimeslot.get(pos).slot2);
+            mTimeslotTime.add(mTimeslot.get(pos).slot3);
+            Log.e("TESTING", "Time:" + mTimeslotTime);
+            timeAdapter.notifyDataSetChanged();
+        }
+        @Override
+        public void onNothingSelected(AdapterView<?> arg0) {
+            // TODO Auto-generated method stub
+        }
     }
 
 //////////////////////////////////////////////////////////////////////
@@ -596,24 +737,124 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         }
     }
 
-    // Direction to NYP (How to get to place through Google Map for appointment)
-    public void googMap(View view) {
-        double destinationLatitude = 1.379268;
-        double destinationLongitude = 103.849878;
-        String uri = String.format(Locale.ENGLISH, "http://maps.google.com/maps?daddr=%f,%f (%s)", destinationLatitude, destinationLongitude, "Block L - School of Information Technology");
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
-        intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
-        try {
-            startActivity(intent);
-        } catch (ActivityNotFoundException ex) {
-            Toast.makeText(this, "Please install a maps application", Toast.LENGTH_LONG).show();
-            try {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.maps" +
-                        "" +
-                        "&hl=en")));
-            } catch (android.content.ActivityNotFoundException anfe) {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.apps.maps&hl=en")));
+    private void initSwipe(){
+        ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                return false;
             }
-        }
+
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+
+                if (direction == ItemTouchHelper.LEFT){
+                    mAdapter.notifyItemChanged(position);
+                    deleteAppointment(position);
+                    Log.e("MOVE LEFT", "SWIPE LEFT");
+                } else {
+                    mAdapter.notifyItemChanged(position);
+                    rescheduleAppointment(position);
+                    Log.e("MOVE RIGHT", "SWIPE RIGHT");
+                }
+            }
+        };
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleItemTouchCallback);
+        itemTouchHelper.attachToRecyclerView(mAppointmentRecycler);
+    }
+
+    private void deleteAppointment(final int index) {
+        new AlertDialog.Builder(this)
+                .setTitle("Cancel Appointment")
+                .setMessage("Are you sure you would like to cancel this appointment?")
+                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        patientAppointDB.child(mAppointmentIds.get(index)).removeValue();
+                    }
+                })
+                .setNegativeButton("Cancel",new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                })
+                .show();
+    }
+
+    private void rescheduleAppointment(final int index) {
+        // Layout inflater
+        LayoutInflater inflater = getLayoutInflater();
+        View dialoglayout = inflater.inflate(R.layout.reschedule_dialog, null);
+        android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(AppointmentChecker.this);
+        builder.setTitle("Reschedule Appointment");
+        builder.setView(dialoglayout);
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+                String sd = dateSpinner.getSelectedItem().toString();
+                String sc = timeSpinner.getSelectedItem().toString();
+
+                patientAppointDB.child(mAppointmentIds.get(index)).child("date").setValue(sd);
+                patientAppointDB.child(mAppointmentIds.get(index)).child("time").setValue(sc);
+                mTimeslotDate.clear();
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+                mTimeslotDate.clear();
+            }
+        });
+        builder.show();
+
+        // Date Spinner
+        dateSpinner = (Spinner) dialoglayout.findViewById(R.id.dateSpinner);
+        dataAdapter = new ArrayAdapter<String>(AppointmentChecker.this, android.R.layout.simple_spinner_item, mTimeslotDate);
+        dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        dateSpinner.setAdapter(dataAdapter);
+        dateSpinner.setOnItemSelectedListener(new CustomOnItemSelectedListener());
+
+        // Time Spinner
+        timeSpinner = (Spinner) dialoglayout.findViewById(R.id.timeSpinner);
+        timeAdapter = new ArrayAdapter<String>(AppointmentChecker.this, android.R.layout.simple_spinner_item, mTimeslotTime);
+        timeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        timeSpinner.setAdapter(timeAdapter);
+
+
+        //Initialize ChildEventListener for timeslot
+        ChildEventListener timeslotListener = new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
+                // Get Post object and use the values to update the UI
+                Timeslot timeslot = dataSnapshot.getValue(Timeslot.class);
+                mTimeslot.add(timeslot);
+                mTimeslotDate.add(timeslot.date);
+                Log.e("Timeslot Available", "Testing" + mTimeslotDate);
+                Log.e("Timeslot Date:", "Testing" + timeslot.date);
+                dataAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {
+                // Getting appointment failed, log a message
+                Toast.makeText(AppointmentChecker.this, "Failed to load appointment.",
+                        Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {}
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {}
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {}
+        };
+
+        // Attach listener to database reference
+        timeslotDB.addChildEventListener(timeslotListener);
+        vTimeslotListener = timeslotListener;
     }
 }

@@ -8,4 +8,15 @@
     <string name="nric_verify">NRIC Verification</string>
     <string name="otp_verify">One-Time-Password</string>
     <string name="appointment">Appointments</string>
+    <string name="date_prompt">Choose a date</string>
+    <string name="time_prompt">Choose a time</string>
+    <string name="type_prompt">Choose a type</string>
+
+    <string-array name="type_array">
+        <item>Clinical</item>
+        <item>Check-up</item>
+        <item>Specialist</item>
+        <item>Dental</item>
+    </string-array>
+
 </resources>
