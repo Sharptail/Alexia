@@ -46,6 +46,16 @@
                 style="@style/Base.Widget.AppCompat.Button.Borderless"
                 android:onClick="toggleTrackingMode"
                 />
+            <Button
+                android:id="@+id/question_button"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/question"
+                style="@style/Base.Widget.AppCompat.Button.Borderless"
+                android:onClick="showQrCameraTut"
+                />
         </LinearLayout>
 
         <android.support.design.widget.FloatingActionButton

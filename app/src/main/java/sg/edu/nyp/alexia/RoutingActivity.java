@@ -6,6 +6,7 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -17,6 +18,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -144,6 +146,7 @@ public class RoutingActivity extends Activity {
     private Boolean trackingMode = false;
     private Button trackingButton;
     private LatLng currentLatLng;
+    private String endPointFromCheckIn;
 
     @Override
     protected void onStart() {
@@ -391,6 +394,7 @@ public class RoutingActivity extends Activity {
                 });
             }
         });
+
         initFiles(currentArea);
 
         Handler handler = new Handler();
@@ -398,14 +402,37 @@ public class RoutingActivity extends Activity {
             public void run() {
                 Bundle extras = getIntent().getExtras();
                 if (extras != null) {
+                    isEndFirst = true;
                     String value = extras.getString("result");
                     Log.e("IntentApoint", value);
-                    AppCheckRoute(value);
+//                    AppCheckRoute(value);
+                    endPointFromCheckIn = value;
                 }
             }
-        }, 5000);
+        }, 0);
 
-        showQrCameraTut();
+        Button gotitButton = (Button) LayoutInflater.from(this).inflate(R.layout.gotit_custom_button, sv, false);
+        RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        Target viewTarget = new ViewTarget(R.id.qr_scanner_button, this);
+        sv = new ShowcaseView.Builder(this)
+                .setTarget(viewTarget)
+                .setContentTitle("Position Scanner")
+                .setContentText("Scan nearby QR Code to indicate your current position")
+                .setStyle(R.style.CustomShowcaseTheme2)
+                .replaceEndButton(gotitButton)
+                .setShowcaseEventListener(
+                        new SimpleShowcaseEventListener() {
+                            @Override
+                            public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                                showLayerTut();
+                            }
+                        }
+                )
+                .singleShot(42)
+                .build();
+        sv.setButtonPosition(lps);
     }
 
     @Override
@@ -613,6 +640,9 @@ public class RoutingActivity extends Activity {
                             + getErrorMessage());
                 } else {
 //                    logUser("Finished loading graph.");
+                    if(isEndFirst == true){
+                        AppCheckRoute(endPointFromCheckIn);
+                    }
                 }
 
                 finishPrepare();
@@ -627,7 +657,7 @@ public class RoutingActivity extends Activity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == -1) {
             requestPermissions(new String[]{
                     Manifest.permission.CAMERA
-            }, 1234);
+            }, 123);
         } else {
             Intent intent = new Intent(this, QRCodeScannerActivity.class);
             startActivityForResult(intent, QR_CODE_SCANNER_CODE);
@@ -686,6 +716,7 @@ public class RoutingActivity extends Activity {
                             // Calculate Shortest Path
                             calcPath(start.getLatitude(), start.getLongitude(), end.getLatitude(),
                                     end.getLongitude(),mapboxMap);
+                            isEndFirst = false;
                         }
 
                         for (int i = 0; i < atmList.size(); i++) {
@@ -710,7 +741,7 @@ public class RoutingActivity extends Activity {
         }
     }
 
-    public void showQrCameraTut(){
+    public void showQrCameraTut(View view){
         Button gotitButton = (Button) LayoutInflater.from(this).inflate(R.layout.gotit_custom_button, sv, false);
         RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -1243,6 +1274,24 @@ public class RoutingActivity extends Activity {
         });
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if(requestCode == 123){
+            // Check if the only required permission has been granted
+            if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Camera permission has been granted, preview can be displayed
+                log("CAMERA permission has now been granted. Showing preview.");
+
+                Intent intent = new Intent(this, QRCodeScannerActivity.class);
+                startActivityForResult(intent, QR_CODE_SCANNER_CODE);
+            } else {
+                logUser("CAMERA permission not granted");
+            }
+        }
+    }
+
     private void finishPrepare() {
         prepareInProgress = false;
     }
@@ -1449,7 +1498,6 @@ public class RoutingActivity extends Activity {
     }
 
     public void AppCheckRoute(String room) {
-        isEndFirst = true;
         selectedLocationIndex = getIndexByname(room);
 //        Log.e("ACR INDEX:" , String.valueOf(acrIndex));
         mapView.getMapAsync(new OnMapReadyCallback() {
@@ -1464,11 +1512,11 @@ public class RoutingActivity extends Activity {
 
                     // Add the marker to the map
                     mapboxMap.addMarker(createMarkerItem(end, R.drawable.end, "Destination", ""));
-
+//                    progressDialog.dismiss();
                     openQRScanner(roomListView);
                 } else {
                     end = stairsPoint;
-
+//                    progressDialog.dismiss();
                     openQRScanner(roomListView);
                 }
             }

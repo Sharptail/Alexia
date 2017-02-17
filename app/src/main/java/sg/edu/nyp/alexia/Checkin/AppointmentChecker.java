@@ -3,26 +3,22 @@ package sg.edu.nyp.alexia.checkin;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.RectF;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
-import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -65,11 +61,6 @@ import sg.edu.nyp.alexia.model.Patients;
 import sg.edu.nyp.alexia.model.Timeslot;
 import sg.edu.nyp.alexia.receivers.GeofenceReceiver;
 import sg.edu.nyp.alexia.services.SensorService;
-
-import static sg.edu.nyp.alexia.R.id.appoint_detail_holder;
-import static sg.edu.nyp.alexia.R.id.dateSpinner;
-import static sg.edu.nyp.alexia.R.id.timeSpinner;
-import static sg.edu.nyp.alexia.R.id.typeSpinner;
 
 public class AppointmentChecker extends AppCompatActivity implements Serializable {
     private static final String TAG = "AppointmentChecker";
@@ -252,7 +243,7 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                 public void onDataChange(DataSnapshot dataSnapshot) {
                     // Get Post object and use the values to update the UI
                     Patients patients = dataSnapshot.getValue(Patients.class);
-                    mPatientHeader.setText("Patient");
+                    mPatientHeader.setText("Hello!");
                     mPatientName.setText(patients.name);
                 }
 
@@ -400,10 +391,16 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                 // If checkin equals yes, calls routing to
                 // allow navigation to users designated
                 // room for consultation
-                Intent intent = new Intent(this, RoutingActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                intent.putExtra("result", mAppointments.get(mAppointmentIndex).getRoom());
-                startActivity(intent);
+                if(ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == -1){
+                    requestPermissions(new String[]{
+                            android.Manifest.permission.CAMERA
+                    }, 111);
+                } else {
+                    Intent intent = new Intent(this, RoutingActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    intent.putExtra("result", mAppointments.get(mAppointmentIndex).getRoom());
+                    startActivity(intent);
+                }
             }
         } else {
             new AlertDialog.Builder(this)
@@ -415,6 +412,26 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
                         }
                     })
                     .show();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if(requestCode == 111){
+            // Check if the only required permission has been granted
+            if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Camera permission has been granted, preview can be displayed
+                log("CAMERA permission has now been granted. Showing preview.");
+
+                Intent intent = new Intent(this, RoutingActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.putExtra("result", mAppointments.get(mAppointmentIndex).getRoom());
+                startActivity(intent);
+            } else {
+                logUser("CAMERA permission not granted");
+            }
         }
     }
 
@@ -856,5 +873,19 @@ public class AppointmentChecker extends AppCompatActivity implements Serializabl
         // Attach listener to database reference
         timeslotDB.addChildEventListener(timeslotListener);
         vTimeslotListener = timeslotListener;
+    }
+
+    // Jian Wei - is to Log a string and Toast at the same time for easier debugging
+    private void log(String str) {
+        Log.e("GH", str);
+    }
+
+    private void log(String str, Throwable t) {
+        Log.e("GH", str, t);
+    }
+
+    private void logUser(String str) {
+        log(str);
+        Toast.makeText(this, str, Toast.LENGTH_SHORT).show();
     }
 }
